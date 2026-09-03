@@ -1,12 +1,7 @@
 # ZQM Labs
-[![Release](https://github.com/ZQM-Labs/ZQM-Labs/actions/workflows/release.yml/badge.svg)](https://github.com/ZQM-Labs/ZQM-Labs/actions/workflows/release.yml)
-
-
-[![CI](https://github.com/ZQM-Labs/ZQM-Labs/actions/workflows/ci.yml/badge.svg)](https://github.com/ZQM-Labs/ZQM-Labs/actions/workflows/ci.yml) [![Tests](https://github.com/ZQM-Labs/ZQM-Labs/actions/workflows/tests.yml/badge.svg)](https://github.com/ZQM-Labs/ZQM-Labs/actions/workflows/tests.yml) [![Ruff](https://github.com/ZQM-Labs/ZQM-Labs/actions/workflows/ci.yml/badge.svg)](https://github.com/ZQM-Labs/ZQM-Labs/actions/workflows/ci.yml) [![mypy](https://github.com/ZQM-Labs/ZQM-Labs/actions/workflows/ci.yml/badge.svg)](https://github.com/ZQM-Labs/ZQM-Labs/actions/workflows/ci.yml)
-
 
 <p align="left">
-  <img src="https://github.com/ZQM-Labs/ZQM-Labs/actions/workflows/ci.yml/badge.svg" alt="CI" />
+  <img src="https://github.com/ZQM-Computing/volusia-portal/actions/workflows/ci.yml/badge.svg" alt="CI" />
   <img src="https://img.shields.io/badge/tests-passing-brightgreen" alt="Tests" />
   <img src="https://img.shields.io/badge/ruff-passing-blue" alt="Ruff" />
   <img src="https://img.shields.io/badge/mypy-passing-blue" alt="Mypy" />
@@ -29,6 +24,7 @@ ZQM Labs develops and maintains the open-source tooling, attestation frameworks,
 
 | Repo | Description | Topics |
 |------|-------------|--------|
+| [project-volusia](https://github.com/ZQM-Labs/project-volusia) | Project Volusia — Public Data Portal & Intelligence Platform for Volusia County, Florida | volusia, data-driven, data-portal, open-source-intelligence, community-resilience, research, react |
 | [awesome-windows-attestation](https://github.com/ZQM-Labs/awesome-windows-attestation) | Awesome Windows attestation: curated list of DFIR, BitLocker, TPM, compliance, and endpoint security resources | attestation, awesome-list, dfir, windows, compliance, zqm, volusia |
 | [zqm-attestation-toolkit](https://github.com/ZQM-Labs/zqm-attestation-toolkit) | ZQM Windows attestation toolkit: BitLocker, TPM, DFIR, endpoint security, and AI integrity verification | windows, dfir, compliance, bitlocker, tpm, attestation, zqm, volusia |
 | [zqm-security-policy](https://github.com/ZQM-Labs/zqm-security-policy) | ZQM enterprise security policies: CIS benchmarks, Windows hardening, compliance runbooks, and attestation | compliance, policy, security, windows, zqm, volusia |
@@ -67,6 +63,16 @@ ZQM Labs develops and maintains the open-source tooling, attestation frameworks,
 | [.github](https://github.com/ZQM-Labs/.github) | ZQM Labs org governance: workflows, security policy, contributing guidelines, and org templates | zqm, governance, templates, volusia |
 | [ZQM-Labs](https://github.com/ZQM-Labs/ZQM-Labs) | ZQM Labs — Research & Development. Strategic focus: Project Volusia — data-driven commerce, open-source intelligence, and community resilience for Volusia County, Florida. | zqm, attestation, bug-bounty, forensics, organization, windows, volusia |
 
+## Charter & Governance
+
+- **Project Volusia Charter**: [OPEN_INTELLIGENCE_DATA_DRIVEN_CHARTER.md](https://github.com/ZQM-Labs/project-volusia/blob/main/OPEN_INTELLIGENCE_DATA_DRIVEN_CHARTER.md)
+- **Guiding Principles**: [GUIDING_PRINCIPLES_VOLUSIA_COUNTY.md](https://github.com/ZQM-Labs/project-volusia/blob/main/GUIDING_PRINCIPLES_VOLUSIA_COUNTY.md)
+- **Mission Statement**: [MISSION_STATEMENT.md](https://github.com/ZQM-Labs/project-volusia/blob/main/MISSION_STATEMENT.md)
+- **Governance**: [PROJECT_VOLUSIA_GOV.md](https://github.com/ZQM-Labs/project-volusia/blob/main/PROJECT_VOLUSIA_GOV.md)
+- **Contributing**: [CONTRIBUTING.md](https://github.com/ZQM-Labs/project-volusia/blob/main/CONTRIBUTING.md)
+- **Data Sources**: [PUBLIC_DATA_SOURCE_RECON.md](https://github.com/ZQM-Labs/project-volusia/blob/main/PUBLIC_DATA_SOURCE_RECON.md)
+- **Phase 1 Operations**: [PHASE_1_OPERATIONS.md](https://github.com/ZQM-Labs/project-volusia/blob/main/PHASE_1_OPERATIONS.md)
+
 ## Governance
 
 - **Security Policy**: See [`.github/SECURITY.md`](https://github.com/ZQM-Labs/.github/blob/main/SECURITY.md)
@@ -79,5 +85,6 @@ ZQM Labs develops and maintains the open-source tooling, attestation frameworks,
 ## Links
 
 - [ZQM Computing](https://github.com/ZQM-Computing)
+- [Project Volusia Portal](https://github.com/ZQM-Computing/volusia-portal)
 - [ZQM Computing GitHub Pages](https://zqm-computing.github.io/ZQM-Computing/)
 - [ZQM Labs GitHub Pages](https://zqm-labs.github.io/ZQM-Labs/)
