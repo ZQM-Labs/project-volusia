@@ -8,7 +8,7 @@ Contact: Alex Zelenski — zqmcomputing@gmail.com
 **Confirmed working:**
 - Data pipeline: `Tools/volusia_data/refresh_v2.py` runs end-to-end and populates `volusia.db`.
 - Portal: FastAPI at http://127.0.0.1:8789 serves `/`, `/api/health`, `/api/indicators`, `/api/status`, `/api/datasets`.
-- Contribution API: FastAPI at http://127.0.0.1:8790 accepts submissions.
+- Contribution API: canonical package (`contribution-api/app`) at http://127.0.0.1:8899 (health verified); lightweight `contribution_api.py` alternative at :8790.
 - Verified live sources: Census PEP, NOAA NCEI, BLS LAUS, BEA CAINC1, BLS QCEW.
 - Governance docs present: `PROJECT_VOLUSIA_GOV.md`, `DATA_ASSET_AUDIT_VOLUSIA.md`, `STAKEHOLDER_INTERVIEW_GUIDE.md`.
 - Methodology document created and published.
@@ -44,11 +44,11 @@ Contact: Alex Zelenski — zqmcomputing@gmail.com
 - [x] Initialize `CONTRIBUTION_LOG.md` with Phase 0 retroactive entries.
 
 ### P2 — Commerce Reliability
-- [ ] Publish `COMMERCE_RESEARCH_RELIABILITY.md` standards doc (already exists as internal charter).
-- [ ] Add SLA/uptime + refresh cadence to portal footer.
+- [x] Publish `COMMERCE_RESEARCH_RELIABILITY.md` standards doc (internal charter; public extract `COMMERCE_RELIABILITY_PUBLIC.md` published 2026-09-03).
+- [x] Add SLA/uptime + refresh cadence to portal footer (`portal_app.py` v1.1.0 — SLA block + per-source cadence + stale detection; also exposed via `/api/status`).
 
 ### P3 — Baseline Portal
-- [ ] Deploy portal on local/static host with real data.
+- [x] Deploy portal on local host with real data (`portal_app.py`, run: `python Tools/volusia_data/portal_app.py`); remote static-host deployment behind Caddy/cloudflared is a Phase-2 follow-up.
 - [x] Add `/api/status` executive summary endpoint.
 - [x] Add health check with DB and fetcher probes.
 
@@ -61,4 +61,7 @@ Contact: Alex Zelenski — zqmcomputing@gmail.com
 - None (all previous blockers resolved).
 
 ## Next Action
-Proceed to P2/P3: add `/api/status` endpoint and SLA/uptime metadata to portal.
+1. Schedule `refresh_v2.py` on a weekly timer so indicators stay within cadence (portal SLA reports per-source freshness vs 45-120 day windows).
+2. Deploy portal behind Caddy/cloudflared (`:250`) per `WEB_FORM_DESIGN.md`.
+3. Begin stakeholder interviews (target: 2 per group by end of October).
+4. Move hardcoded API-key fallbacks (in `refresh_v2.py`/`config.py`) into `.env`; keys currently live in the working copy — tracked tech-debt.

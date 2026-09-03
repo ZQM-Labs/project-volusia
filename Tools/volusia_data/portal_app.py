@@ -6,6 +6,7 @@ Run: python portal_app.py
 """
 import os
 import sqlite3
+from datetime import datetime, timezone
 from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
@@ -14,6 +15,79 @@ app = FastAPI(title="Project Volusia — Open Data Portal")
 
 # DB path: use env var or default to local
 DB_PATH = Path(os.environ.get("VOLUSIA_DB_PATH", str(Path(__file__).resolve().parent / "volusia.db")))
+# ── SLA / refresh-cadence metadata ──────────────────────────────────────────
+# Published in the portal footer and surfaced via /api/status (P2 deliverable.
+SERVICE_METADATA = {
+    "service": "Project Volusia Open Data Portal",
+    "version": "1.1.0",
+    "operator": "ZQM Labs",
+    "uptime_target": "99.9%",
+    "data_freshness_target": "Indicator age must stay within its source refresh cadence",
+    "review_window": "5 business days",
+    "refresh_cadence": {
+        "Census PEP": "Annual (July population-estimates release)",
+        "NOAA NCEI": "Annual batch — daily summaries for the prior calendar year",
+        "BLS LAUS": "Monthly",
+        "BEA Regional": "Annual (CAINC1 release)",
+        "BLS QCEW": "Annual single-file (rebuild quarterly when available)",
+    },
+}
+
+# Maximum acceptable days between pipeline refresh and publication, per source.
+CADENCE_MAX_DAYS = {
+    "Census PEP": 45,
+    "NOAA NCEI": 45,
+    "BLS LAUS": 45,
+    "BEA Regional": 60,
+    "BLS QCEW": 120,
+}
+
+
+def _parse_ts(value):
+    """Parse an ISO-8601 timestamp to a naive UTC datetime, or None."""
+    if not value:
+        return None
+    try:
+        dt = datetime.fromisoformat(str(value.replace("Z", "+00:00")))
+        if dt.tzinfo:
+            return dt.astimezone(timezone.utc).replace(tzinfo=None)
+        return dt
+    except (ValueError, TypeError):
+        return None
+
+
+def _latest_fetch(indicators, source=None):
+    times = []
+    for i in indicators:
+        if source is not None and i.get("source") != source:
+            continue
+        ts = _parse_ts(i.get("fetched_at"))
+        if ts:
+            times.append(ts)
+    return max(times) if times else None
+
+
+def _staleness(indicators):
+    """Per-source freshness vs the cadence table (days since last fetch)."""
+    sources = sorted({i.get("source") for i in indicators if i.get("source")})
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    out = {}
+    for src in sources:
+        latest = _latest_fetch(indicators, src)
+        max_days = CADENCE_MAX_DAYS.get(src)
+        if latest is None:
+            out[src] = {"status": "unknown", "days_since_fetch": None, "cadence_max_days": max_days}
+            continue
+        days = (now - latest).days
+        if days < 0:
+            days = 0
+        out[src] = {
+            "status": "fresh" if max_days is None or days <= max_days else "stale",
+            "days_since_fetch": days,
+            "cadence_max_days": max_days,
+            "last_fetch": latest.isoformat(),
+        }
+    return out
 
 
 def _db_rows(query, params=()):
@@ -84,7 +158,7 @@ def _page_footer(latest):
     """P2 deliverable — SLA/uptime + refresh-cadence metadata in the footer."""
     stamp = latest.isoformat() if latest else "N/A"
     cad = SERVICE_METADATA["refresh_cadence"]
-    cad_html = " · ".join(f"{k}: {v}" for k, v in cad.items()
+    cad_html = " · ".join(f"{k}: {v}" for k, v in cad.items())
     return (
         '<div class="footer">'
         f"<p><strong>Project Volusia</strong> · ZQM Labs · Last refreshed: {stamp}</p>"
@@ -144,11 +218,14 @@ def api_status():
     stale_sources = [s for s, v in freshness.items() if v.get("status") == "stale"]
 
     return {
-        "system": "Project Volusia Open Data Portal",
-        "status": "operational",
+        "system": SERVICE_METADATA["service"],
+        "version": SERVICE_METADATA["version"],
+        "operator": SERVICE_METADATA["operator"],
+        "status": "operational" if indicators else "degraded",
         "total_indicators": len(indicators),
-        "latest_update": latest_update,
-        "stale_indicators": stale_count,
+        "dataset_rows": len(datasets),
+        "latest_update": latest.isoformat() if latest else None,
+        "stale_sources": stale_sources,
         "categories": categories,
         "sla": {
             "uptime_target": SERVICE_METADATA["uptime_target"],
@@ -162,7 +239,8 @@ def api_status():
             "indicators": "/api/indicators",
             "datasets": "/api/datasets",
             "health": "/api/health",
-            "status": "/api/status"
+            "status": "/api/status",
+            "v1": "/api/v1"
         }
     }
 
@@ -170,7 +248,7 @@ def api_status():
 @app.get("/api/indicators/{name}")
 def api_indicator(name: str):
     """Get a single indicator by name (matches openapi.yaml path)."""
-    rows = _db_rows("SELECT * FROM indicators WHERE name = ?", (name,)
+    rows = _db_rows("SELECT * FROM indicators WHERE name = ?", (name,))
     if not rows:
         raise HTTPException(status_code=404, detail="Indicator not found")
     return rows[0]
@@ -193,7 +271,7 @@ def api_v1_indicators():
 
 
 @app.get("/api/v1/indicators/{name}")
-def api_v1_indicator(name: str:
+def api_v1_indicator(name: str):
     return api_indicator(name)
 
 

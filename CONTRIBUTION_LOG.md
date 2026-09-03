@@ -29,6 +29,7 @@ Each entry has:
 | DATE | CONTRIBUTOR | TYPE | DESCRIPTION | STATUS | REVIEWED_BY | NOTES |
 |------|-------------|------|-------------|--------|-------------|-------|
 | 2026-09-03 | ZQM Labs | tool | Census ACS + PEP fetcher, BLS LAUS fetcher, BEA CAINC1 fetcher, NOAA weather fetcher, SQLite portal | accepted | Alex Zelenski | First tool contribution. All tools tested against live APIs. |
+| 2026-09-03 | ZQM Labs | tool | Pipeline runners fixed (run_refresh.py, run_full_refresh.py → refresh_v2.py); portal P2 SLA/cadence footer; contribution API hardened (validation, idempotency, optional auth, business-day ETA); fetchers package adapters | accepted | Alex Zelenski | Verified via smoke test: portal v1.1.0 endpoints + contribution POST/idempotency/validation all pass. |
 | 2026-09-03 | ZQM Labs | data_source | Census ACS 5-Year 2023 (DP03, DP05, S1901, S1701), Census PEP 2024, BLS LAUS 2020-2026 (cached), BEA CAINC1 (zip pending), NOAA daily summaries 2024 | accepted | Alex Zelenski | 4 of 6 sources live. BEA zip download failed (corrupt), NOAA API 400 error. Cached fallbacks active. 
 | 2026-09-03 | Alex Zelenski | charter | BRINGING_FAMILIES_TOGETHER.md (fifth pillar: Families & Community Connection), GUIDING_PRINCIPLES_VOLUSIA_COUNTY.md §5.7 updated, RECON_REPORT_V3.md community/family intelligence sources section added | accepted | Alex Zelenski | Single-focus charter corpus expanded from 6 to 7 foundational documents. Pillar inserted between §5.6 All Movers Accountability and §6 Cross-Cutting Commitments. |
 

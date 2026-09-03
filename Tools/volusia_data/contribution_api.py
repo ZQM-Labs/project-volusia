@@ -10,7 +10,7 @@ import os
 import sys
 import json
 import sqlite3
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -25,7 +25,35 @@ if str(TOOLS_DIR) not in sys.path:
 app = FastAPI(title="Project Volusia — Contribution API")
 
 DB_PATH = Path(os.environ.get("VOLUSIA_DB_PATH", str(Path(__file__).resolve().parent / "volusia.db")))
-API_KEYS = {}  # In production, this would be in a database or auth service
+# ── Optional API-key enforcement ────────────────────────────────────────────
+# Set VOLUSIA_API_KEYS (comma-separated) to require a key. Without it,
+# anonymous submissions are allowed — required by the community web form
+# (WEB_FORM_DESIGN.md: "no login required for anonymous submissions").
+ALLOWED_API_KEYS = {k.strip() for k in os.environ.get("VOLUSIA_API_KEYS", "").split(",") if k.strip()}
+
+# Valid contribution types (aligned with openapi.yaml)
+VALID_CONTRIBUTION_TYPES = ["data_source", "analysis", "tool", "map", "report", "community", "social_media", "educational", "direct"]
+
+
+def add_business_days(start: datetime, days: int) -> datetime:
+    """Advance `start` by `days` business days (Mon–Fri)."""
+    cur, d = 0, start
+    while cur < days:
+        d += timedelta(days=1)
+        if d.weekday() < 5:
+            cur += 1
+    return d
+
+
+def check_api_key(request: Request):
+    """Validate an optional API key (X-API-Key or Bearer). Returns the key or None."""
+    auth = request.headers.get("Authorization", "")
+    bearer = auth[7:].strip() if auth[:7].lower() == "bearer " else ""
+    cred = request.headers.get("X-API-Key") or bearer
+    if cred and cred not in ALLOWED_API_KEYS:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+    return cred or None
+# Keys are read from the VOLUSIA_API_KEYS env var (see ALLOWED_API_KEYS above).
 
 
 def _db():
@@ -49,22 +77,33 @@ async def submit_contribution(request: Request):
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid JSON body")
 
+    check_api_key(request)
+
     contribution_type = body.get("contribution_type", "direct")
-    content = body.get("content", body)  # Accept full body if no content wrapper
+    content = body.get("content", body)  # accept full body when no content wrapper (may be None)
     idempotency_key = body.get("idempotency_key")
 
     # Validate contribution type
-    valid_types = ["data_source", "analysis", "tool", "map", "report", "community", "social_media", "educational", "direct"]
-    if contribution_type not in valid_types:
-        raise HTTPException(status_code=400, detail=f"Invalid contribution_type. Must be one of: {valid_types}")
+    if contribution_type not in VALID_CONTRIBUTION_TYPES:
+        raise HTTPException(status_code=400, detail=f"Invalid contribution_type. Must be one of: {VALID_CONTRIBUTION_TYPES}")
+
+    # Validate content is present and meaningful
+    empty = content is None or (
+        isinstance(content, str) and not content.strip()
+    ) or (
+        isinstance(content, (dict, list)) and len(content) == 0
+    )
+    if empty:
+        raise HTTPException(status_code=400, detail="Content is required and must be non-empty")
 
     # Generate submission ID
-    ts = datetime.now().strftime("%Y%m%d%H%M%S")
+    ts = datetime.now().strftime("%Y%m%d%H%M%S%f")
     submission_id = f"SUB-{contribution_type.upper()}-{ts}"
 
     # Store submission
     conn = _db()
     try:
+        # Ensure the submissions table exists (first run / fresh DB).
         conn.execute("""
             CREATE TABLE IF NOT EXISTS submissions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -81,33 +120,41 @@ async def submit_contribution(request: Request):
         """)
         conn.commit()
 
+        # Idempotent retry: same key returns the existing submission (200).
+        if idempotency_key:
+            existing = conn.execute(
+                "SELECT * FROM submissions WHERE idempotency_key = ? ORDER BY submitted_at DESC LIMIT 1",
+                (idempotency_key,),
+            ).fetchone()
+            if existing:
+                return JSONResponse(status_code=200, content={
+                    "submission_id": existing["submission_id"],
+                    "status": existing["status"],
+                    "message": "Submission already exists (idempotent retry acknowledged)",
+                })
+
         now = _now()
         conn.execute("""
-            INSERT INTO submissions (submission_id, contribution_type, content, status, submitted_at, idempotency_key)
-            VALUES (?, ?, ?, 'queued', ?, ?)
-        """, (submission_id, contribution_type, json.dumps(content), now, idempotency_key))
+            INSERT INTO submissions (submission_id, contribution_type, content, status, submitted_at, acknowledged_at, idempotency_key)
+            VALUES (?, ?, ?, 'queued', ?, ?, ?)
+        """, (submission_id, contribution_type, json.dumps(content), now, now, idempotency_key))
         conn.commit()
 
     except sqlite3.IntegrityError as e:
-        if "UNIQUE constraint failed" in str(e) and idempotency_key:
-            # Return existing submission for idempotent retry
-            row = conn.execute("SELECT * FROM submissions WHERE idempotency_key = ?", (idempotency_key,)).fetchone()
-            if row:
-                return JSONResponse(status_code=200, content={
-                    "submission_id": row["submission_id"],
-                    "status": row["status"],
-                    "message": "Submission already exists (idempotent retry acknowledged)"
-                })
-        raise HTTPException(status_code=409, detail="Duplicate submission")
+        raise HTTPException(status_code=409, detail=f"Duplicate submission: {e}")
     finally:
         conn.close()
+
+    review_by = add_business_days(datetime.now(timezone.utc), 5)
 
     return JSONResponse(status_code=201, content={
         "submission_id": submission_id,
         "status": "queued",
         "submitted_at": now,
-        "estimated_review_by": "5 business days from acknowledgment",
-        "message": "Contribution received. You will receive an update within 5 business days."
+        "acknowledged_at": now,
+        "estimated_review_by": review_by.isoformat(),
+        "anonymous": True,
+        "message": "Contribution received. You will receive an update within 5 business days.",
     })
 
 
@@ -163,6 +210,24 @@ async def list_contributions(limit: int = 50, offset: int = 0):
 @app.get("/api/v1/health")
 async def health():
     return {"status": "healthy", "timestamp": _now()}
+
+
+@app.get("/")
+async def root():
+    """Service metadata and endpoint index."""
+    return {
+        "name": "Project Volusia — Contribution API",
+        "version": "2026-09-03",
+        "anonymous_submissions": not bool(ALLOWED_API_KEYS),
+        "endpoints": {
+            "submit": "POST /api/v1/contributions",
+            "status": "GET /api/v1/contributions/{submission_id}",
+            "list": "GET /api/v1/contributions",
+            "health": "GET /api/v1/health",
+            "swagger": "/docs",
+        },
+        "spec": "See openapi.yaml in repo root",
+    }
 
 
 if __name__ == "__main__":

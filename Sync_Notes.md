@@ -55,6 +55,39 @@ decisions made, and stakeholder signals surfaced.
 3. Register for free BEA API key (alternative to ZIP download)
 4. Begin stakeholder outreach for interviews (target: 2 per group by end of October)
 
+### 2026-09-03 (Follow-up — P2/P3 + Contribution System Hardening)
+
+**What Shipped:**
+- Portal P2: SLA/uptime + refresh-cadence metadata added to the portal footer
+  (`portal_app.py` v1.1.0); `/api/status` now reports per-source freshness with
+  stale detection; `/api/v1/*` aliases aligned with `openapi.yaml`.
+- Pipeline runners fixed: root `run_refresh.py` and
+  `Tools/volusia_data/run_full_refresh.py` now execute `refresh_v2.py`
+  end-to-end (previously broken / stub).
+- `volusia_data.fetchers` package restored — thin adapters over `refresh_v2` so
+  legacy imports no longer crash.
+- Lightweight contribution API (`contribution_api.py`) hardened: content
+  validation, idempotency keys, optional `VOLUSIA_API_KEYS` auth, true
+  business-day review ETA, root metadata endpoint.
+- Docs: `Q4_2026_DELIVERY_STATUS.md` updated (P0/P1/P2 done, P3 local host
+  done), `DATA_ASSET_AUDIT_VOLUSIA.md` table fixed, `TOOLS_CATALOG.md`
+  implemented-tools section added, contribution logs updated.
+
+**What's Blocked:**
+- None.
+
+**Decisions Made:**
+- Canonical Contribution API = `contribution-api/` package on
+  http://127.0.0.1:8899 (health verified 2026-09-03). The lightweight
+  `contribution_api.py` (:8790) remains the fully-anonymous alternative.
+- Hardcoded API-key fallbacks remain in `refresh_v2.py`/`config.py` so the
+  pipeline keeps working; rotating them into `.env` is tracked tech-debt.
+
+**Action Items (next):**
+1. Schedule `refresh_v2.py` via Windows Task Scheduler (weekly) for SLA.
+2. Deploy portal behind Caddy/cloudflared (`:250`).
+3. Begin stakeholder interviews (target: 2 per group by end of October).
+
 ---
 
 Document owner: Project Volusia Ops / Communications Lead

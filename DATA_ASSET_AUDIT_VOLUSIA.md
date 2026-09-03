@@ -382,7 +382,7 @@ the fetcher layer to use tiered access (direct API → CSV download → manual f
 | Public Safety           | 0      | 0         | 0       | 3       | 3     |
 | Health                  | 0      | 0         | 0       | 3       | 3     |
 | Education               | 0      | 0         | 1       | 1       | 2     |
-| Government Finance      | 1      | 0         | 0         1       | 2     |
+| Government Finance      | 1      | 0         | 0         | 1       | 2     |
 | TOTAL                   | 7      | 4         | 4       | 16      | 31    |
 
 CONFIRMED WORKING (no key):  7 sources

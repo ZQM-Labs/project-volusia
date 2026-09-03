@@ -194,7 +194,49 @@ Tools for deployment, monitoring, and maintenance:
 
 ---
 
-3. TOOL DEVELOPMENT STANDARDS
+3. IMPLEMENTED TOOLS (AS OF 2026-09-03)
+=========================================
+
+Canonical tools actually shipped in this repository:
+
+  refresh_v2.py
+    Purpose:    Unified data pipeline — Census PEP, NOAA NCEI, BLS LAUS,
+                BEA CAINC1, BLS QCEW -> volusia.db (SQLite, 13 indicators)
+    Path:       Tools/volusia_data/refresh_v2.py
+    Run:        python Tools/volusia_data/refresh_v2.py
+                python Tools/volusia_data/run_full_refresh.py
+                python run_refresh.py            (from repo root)
+
+  portal_app.py
+    Purpose:    Standalone FastAPI portal — HTML dashboard + JSON APIs,
+                SLA/uptime + refresh-cadence footer, /api/v1 aliases
+    Path:       Tools/volusia_data/portal_app.py
+    Run:        python Tools/volusia_data/portal_app.py    # -> :8789
+
+  contribution_api.py
+    Purpose:    Lightweight contribution API (anonymous-first)
+    Path:       Tools/volusia_data/contribution_api.py
+    Run:        python Tools/volusia_data/contribution_api.py  # -> :8790
+
+  contribution-api/ (package)
+    Purpose:    Canonical Contribution API (SQLAlchemy, auth, rate tiers)
+    Path:       contribution-api/app
+    Run:        cd contribution-api && python -m app.main   # -> :8899
+
+  vu_config.py / volusia_data/config.py
+    Purpose:    Centralized API-key and path configuration
+    NOTE:       Copy Tools/.env.example -> Tools/.env and set the keys.
+
+  volusia_data/fetchers/
+    Purpose:    Legacy fetcher interface — thin adapter classes over
+                refresh_v2 (keeps historical imports importable).
+
+Entries in section 2 remain the design catalog of tools not yet built; new
+tools are promoted here on arrival.
+
+---
+
+4. TOOL DEVELOPMENT STANDARDS
 ==============================
 
   - All tools have a --help flag explaining usage
@@ -206,7 +248,7 @@ Tools for deployment, monitoring, and maintenance:
 
 ---
 
-4. OPEN SOURCE PRIORITY
+5. OPEN SOURCE PRIORITY
 =========================
 
 When selecting tools for any task, we prioritize:

@@ -41,6 +41,11 @@ Each entry:
 | 2026-09-03 | P1-006 | pipeline_fix | ZQM Labs | ACCEPTED | refresh_v2.py + PEP/NOAA/QCEW fetchers | Exec Sponsor |
 | 2026-09-03 | P1-007 | stakeholder_summary | ZQM Labs | ACCEPTED | STAKEHOLDER_INPUT_SUMMARY_Q4_2026.md v1.0 | Exec Sponsor |
 | 2026-09-03 | P1-008 | commerce_public | ZQM Labs | ACCEPTED | COMMERCE_RELIABILITY_PUBLIC.md v1.0 | Exec Sponsor |
+| 2026-09-03 | P1-009 | pipeline_runner | ZQM Labs | ACCEPTED | run_full_refresh.py + run_refresh.py fixed to run refresh_v2.py | Exec Sponsor |
+| 2026-09-03 | P1-010 | portal_sla_footer | ZQM Labs | ACCEPTED | portal_app.py v1.1.0 — SLA/uptime + refresh cadence footer, /api/status per-source freshness, /api/v1 aliases | Exec Sponsor |
+| 2026-09-03 | P1-011 | contribution_api | ZQM Labs | ACCEPTED | contribution_api.py hardened — content validation, idempotency, optional API key, business-day ETA, root metadata | Exec Sponsor |
+| 2026-09-03 | P1-012 | fetcher_package | ZQM Labs | ACCEPTED | volusia_data.fetchers restored (adapters over refresh_v2) | Exec Sponsor |
+| 2026-09-03 | P1-013 | docs_q4 | ZQM Labs | ACCEPTED | Q4_2026_DELIVERY_STATUS.md, DATA_ASSET_AUDIT_VOLUSIA.md, TOOLS_CATALOG.md updates | Exec Sponsor |
 
 ---
 
