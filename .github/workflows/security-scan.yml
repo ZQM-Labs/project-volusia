@@ -8,6 +8,15 @@ on:
   schedule:
     - cron: '0 6 * * 1'
 
+# P1-020: restored permissions block (the rewrite dropped it). CodeQL
+# upload-sarif needs security-events:write + actions:read for its API
+# endpoints — without them the upload fails with "Resource not accessible
+# by integration" (observed on run 33772220066, commit 1008aa1).
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
 jobs:
   security:
     runs-on: ubuntu-latest
@@ -19,8 +28,10 @@ jobs:
           scan-type: 'fs'
           format: 'sarif'
           output: 'trivy-results.sarif'
+      # P1-020: v3 -> v4 (v3 deprecates Dec 2026 per CodeQL Action warning;
+      # v4 already in use in supply-chain-scan.yml).
       - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: 'trivy-results.sarif'
       - name: Run gitleaks

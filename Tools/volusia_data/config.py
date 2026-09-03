@@ -52,6 +52,7 @@ CGB_ADMIN_EMAIL = os.environ.get("CGB_ADMIN_EMAIL", "cgb@zqmlabs.com")
 # External site
 EXTERNAL_SITE_URL = os.environ.get("EXTERNAL_SITE_URL", "https://volusia.zqmlabs.com")
 
+
 # Validate keys at startup (non-fatal, just log)
 def validate_keys() -> dict:
     """Check which API keys are configured. Returns status dict."""
@@ -62,6 +63,7 @@ def validate_keys() -> dict:
         "noaa": True,  # NOAA doesn't require a key
         "all_configured": bool(CENSUS_API_KEY and BLS_API_KEY and BEA_API_KEY),
     }
+
 
 if __name__ == "__main__":
     status = validate_keys()
