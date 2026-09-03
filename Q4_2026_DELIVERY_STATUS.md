@@ -46,6 +46,7 @@ Contact: Alex Zelenski — zqmcomputing@gmail.com
 - [x] Publish `ADR-005` GitHub profile structure; `profile/README.md` aligned to Project Volusia focus; honest badges in root README.
 - [x] GitHub Pages site audit: `*-es.html` duplicated-meta fixes, `sitemap.xml` es URLs added; Pages-site rebrand tracked as owner action (ADR-005 addendum).
 - [x] CI made green without rewriting other writers' code: `pyproject.toml` (ruff scoped to owned paths, `*.md` excluded, `[project]` for tests.yml), `requirements-dev.txt`, `tests/test_portal.py` (7/7 pass with & without DB); portal missing-DB 500 fixed (`_get_freshness`/`_get_category_counts` guards); `.ruff_cache/` gitignored.
+- [x] Push-safety audit of all workflows (P1-018): `security-scan.yml` fixed (org-license-free gitleaks container, `permissions:` block added, trivy pinned to `0.28.0`); `supply-chain-scan.yml` set to workflow_dispatch-only (scanner repo not public → 404); **urgent**: API keys committed to public repo flagged for rotation.
 
 ### P2 — Commerce Reliability
 - [x] Publish `COMMERCE_RESEARCH_RELIABILITY.md` standards doc (internal charter; public extract `COMMERCE_RELIABILITY_PUBLIC.md` published 2026-09-03).

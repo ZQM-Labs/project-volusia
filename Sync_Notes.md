@@ -181,9 +181,38 @@ without reformatting or rewriting files owned by other writers.
 - Verified at repo root: `ruff check .` PASS · `ruff format --check .` PASS.
 
 **Action Items (next):**
-- Owner: push `main` to `ZQM-Labs/project-volusia` and watch the first CI run
-  (ci.yml + tests.yml) — then decide the fate/rebrand of the GitHub Pages site
-  (ADR-005 addendum).
+- Push attempted by cline-ci right after the P1-018 commit; outcome visible in
+  `git log` (ahead count) and GitHub Actions. If credentials blocked it,
+  owner pushes `main` → `ZQM-Labs/project-volusia`.
+- Owner (URGENT): rotate the three committed API keys — see P1-018 below.
+- Owner: decide GitHub Pages rebrand (ADR-005 addendum).
+
+**P1-018 — push-safety audit of all GitHub workflows (2026-09-03, cline-ci)**
+
+Audited every `.github/workflows/*.yml` before the first push so CI would not
+go red on arrival:
+
+- `ci.yml` / `tests.yml`: already hardened (P1-017) — pass as-is.
+- `release.yml`: tag-triggered only — safe.
+- `volusia-pipeline.yml`: push-triggered on `Tools/volusia_data/**`, but
+  `refresh_v2.main()` returns its results dict and the `__main__` block
+  ignores it → process always exits 0. Keyless CI runs log per-source FAILs
+  and stay green. No edit needed (exit-code semantics worth improving later,
+  but that is the pipeline owner's call).
+- `security-scan.yml` FIXED: (a) gitleaks-action@v2 hard-fails on org repos
+  without a paid `GITLEAKS_LICENSE` secret → replaced with the official
+  license-free container image (`ghcr.io/gitleaks/gitleaks:latest`);
+  (b) added the missing `permissions:` block (SARIF upload requires
+  `security-events: write`); (c) pinned `trivy-action@0.28.0` (was `@master`).
+- `supply-chain-scan.yml` FIXED: automated triggers disabled
+  (workflow_dispatch only) — it downloads its scanner from the non-public
+  `ZQM-Labs/zqm-supply-chain-scanner` repo (HTTP 404 on every automated run).
+  Re-enable push/PR/schedule once that repo is public.
+- SECURITY (urgent, owner action): API keys are COMMITTED to the public repo —
+  `Tools/volusia_data/config.py` (Census/BLS/BEA hardcoded fallbacks) and
+  `Tools/volusia_data/refresh_v2.py` (BLS/BEA fallbacks). Rotate all three
+  keys, keep them in repo Secrets only, then remove gitleaks'
+  `continue-on-error` so true positives block builds.
 
 ---
 

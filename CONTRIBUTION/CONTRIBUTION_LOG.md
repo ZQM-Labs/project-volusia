@@ -50,6 +50,7 @@ Each entry:
 | 2026-09-03 | P1-015 | github_profile | ZQM Labs | ACCEPTED | ADR-005 GitHub profile structure; profile/README aligned to Project Volusia; honest README badges | Exec Sponsor |
 | 2026-09-03 | P1-016 | github_pages_audit | ZQM Labs | ACCEPTED | GitHub Pages site audit: es meta fixes, sitemap es URLs; Pages rebrand deferred as owner action (ADR-005 addendum) | Exec Sponsor |
 | 2026-09-03 | P1-017 | ci_integrity | ZQM Labs | ACCEPTED | pyproject.toml + requirements-dev.txt + tests/test_portal.py; portal missing-DB guard; ruff lint+format green at root | Exec Sponsor |
+| 2026-09-03 | P1-018 | push_safety | ZQM Labs | ACCEPTED | All workflows audited; security-scan.yml (gitleaks container, permissions, trivy pin) + supply-chain-scan.yml (dispatch-only) fixed; committed API keys flagged for rotation | Exec Sponsor |
 
 ---
 
