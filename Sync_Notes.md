@@ -263,6 +263,18 @@ After 1008aa1 (writer's docs/portal sweep):
   already persists every refresh. Re-enable with `git add -f` only if the
   owner explicitly wants DB-in-git.
 
+### P1-022 — repo hygiene + live lock-race handling (2026-09-03)
+
+- Tree audit against the workspace listing: `.env` (CENSUS/BLS/BEA keys,
+  untracked+ignored — writer is mid-rotation per P1-018), `claims/`,
+  `.ruff_cache/` all clean. Gap found: `.pytest_cache/` had no ignore rule
+  → added to `.gitignore` (commit c9cfc38, pushed to both remotes).
+- First live `index.lock` collision with the concurrent writer: resolved by
+  backoff-retry (12s×4) without ever removing their lock — protocol
+  validated under contention. See COLLABORATION_CONVENTIONS.md §4.
+- New owner item: GitHub reports 10 Dependabot vulnerabilities on
+  ZQM-Labs/ZQM-Labs default branch (1 critical, 4 high, 2 moderate, 3 low).
+
 ---
 
 Related: PROJECT_VOLUSIA_GOV.md, CONTRIBUTION_LOG.md

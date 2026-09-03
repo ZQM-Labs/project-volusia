@@ -54,6 +54,8 @@ Each entry:
 | 2026-09-03 | P1-019 | ci_hotfix | ZQM Labs | ACCEPTED | security-scan.yml trivy ref corrected @0.28.0 → @v0.28.0 (unresolvable ref failed job setup); verified green on GitHub Actions | Exec Sponsor |
 | 2026-09-03 | P1-020 | ci_debug | ZQM Labs | ACCEPTED | config.py whitespace (Format check red after 1008aa1); security-scan.yml permissions restored (upload-sarif integration error, run 33772220066); upload-sarif v3→v4 | Exec Sponsor |
 | 2026-09-03 | P1-021 | workflow_debug | ZQM Labs | ACCEPTED | security-scan.yml gitleaks container restored (org license wall, run 33780238618); supply-chain-scan scanner-repo probe + SARIF path fix (404, run 33780238547); volusia-pipeline GH_TOKEN login, direct refresh_v2.py run, DB-push disabled (run 33780238631) | Exec Sponsor |
+| 2026-09-03 | P1-022 | repo_hygiene | ZQM Labs | ACCEPTED | .gitignore += .pytest_cache/; tree audit (.env/claims/.ruff_cache verified untracked+ignored); Dependabot alerts on ZQM-Labs mirror flagged to owner (10 vulns, 1 critical) | Exec Sponsor |
+
 
 ---
 
