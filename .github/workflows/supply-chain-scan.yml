@@ -1,17 +1,11 @@
 name: Supply Chain Security Scan
 on:
-  # P1-018: push/PR/schedule triggers DISABLED — this workflow downloads its
-  # scanner at runtime from ZQM-Labs/zqm-supply-chain-scanner, which is not
-  # public yet, so every automated run failed with HTTP 404 (guaranteed red).
-  # Re-enable the commented triggers once the scanner repo is public
-  # (tracked in Q4_2026_DELIVERY_STATUS.md and docs/adr-005).
-  workflow_dispatch:
-  # push:
-  #   branches: [ main, master ]
-  # pull_request:
-  #   branches: [ main, master ]
-  # schedule:
-  #   - cron: '0 0 * * 1'
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  schedule:
+    - cron: '0 0 * * 1'
 
 permissions:
   contents: read
