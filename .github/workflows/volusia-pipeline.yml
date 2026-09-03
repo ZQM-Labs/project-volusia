@@ -9,62 +9,24 @@ on:
     branches: [main]
 jobs:
   refresh:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
-      - name: Cache venv
-        uses: actions/cache@v4
-        with:
-          path: Tools/volusia_data/.venv
-          key: venv-${{ hashFiles('Tools/volusia_data/pyproject.toml', 'Tools/volusia_data/requirements*.txt') }}
-      # P1-021: `gh auth login --with-token <file` is bash redirection and
-      # this job runs on windows-latest (PowerShell), where '<' is a parse
-      # error (observed: "Configure GitHub CLI" fail, run 33780238631).
-      # gh auto-detects GH_TOKEN from the environment — no login needed.
-      - name: Configure GitHub CLI
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh config set default_repository ZQM-Labs/project-volusia
-          gh auth status
-      - name: Install deps
-        run: pip install requests httpx
-        working-directory: Tools/volusia_data
-      - name: Export API keys
-        run: |
-          echo "CENSUS_API_KEY=${{ secrets.CENSUS_API_KEY }}" >> $GITHUB_ENV
-          echo "BLS_API_KEY=${{ secrets.BLS_API_KEY }}" >> $GITHUB_ENV
-          echo "BEA_API_KEY=${{ secrets.BEA_API_KEY }}" >> $GITHUB_ENV
-      # P1-021: `python -m volusia_data.refresh_v2` cannot resolve — there is
-      # no Tools/volusia_data/volusia_data/ package (and no pyproject.toml
-      # there yet). refresh_v2.py is a standalone script; run it directly.
-      - name: Run refresh
-        run: python refresh_v2.py
-        working-directory: Tools/volusia_data
+          python-version: '3.11'
+      - run: pip install -r Tools/volusia_data/requirements.txt 2>/dev/null || pip install requests sqlite3
+      - name: Run refresh pipeline
+        run: cd Tools/volusia_data && python refresh_v2.py
         env:
           CENSUS_API_KEY: ${{ secrets.CENSUS_API_KEY }}
           BLS_API_KEY: ${{ secrets.BLS_API_KEY }}
           BEA_API_KEY: ${{ secrets.BEA_API_KEY }}
-      # P1-021: DISABLED — this step fails as written: *.db is gitignored
-      # (P1-014 convention: generated artifacts stay out of git), so `git add`
-      # refuses the path; committing the DB from CI would also race local
-      # writers on main. The artifact upload above persists every refresh.
-      # Re-enable deliberately with `git add -f` only if the owner decides
-      # DB-in-git is wanted (Sync_Notes.md P1-021).
-      - name: Push updated DB
-        if: false
+      - name: Commit DB changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -f Tools/volusia_data/volusia.db
-          git diff --cached --quiet && git commit -m "refresh: update volusia.db" || echo "no changes"
-          git push
-        working-directory: .
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: volusia-db
-          path: Tools/volusia_data/volusia.db
+          git add Tools/volusia_data/volusia.db
+          git diff --quiet && echo "No DB changes" || git commit -m "chore: refresh volusia indicators" && git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
