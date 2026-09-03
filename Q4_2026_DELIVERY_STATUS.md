@@ -42,6 +42,7 @@ Contact: Alex Zelenski — zqmcomputing@gmail.com
 - [x] Publish `STAKEHOLDER_INTERVIEW_GUIDE.md` and schedule interviews.
 - [x] Publish `COMMERCE_RELIABILITY_PUBLIC.md` (public-facing standards reference).
 - [x] Initialize `CONTRIBUTION_LOG.md` with Phase 0 retroactive entries.
+- [x] Publish `COLLABORATION_CONVENTIONS.md` (multi-writer protocol: TTL claims, atomic writes, git hygiene for the shared drive).
 
 ### P2 — Commerce Reliability
 - [x] Publish `COMMERCE_RESEARCH_RELIABILITY.md` standards doc (internal charter; public extract `COMMERCE_RELIABILITY_PUBLIC.md` published 2026-09-03).

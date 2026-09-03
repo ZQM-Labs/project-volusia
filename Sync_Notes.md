@@ -88,6 +88,31 @@ decisions made, and stakeholder signals surfaced.
 2. Deploy portal behind Caddy/cloudflared (`:250`).
 3. Begin stakeholder interviews (target: 2 per group by end of October).
 
+### 2026-09-03 (Post-change — Multi-Writer Protocol)
+
+**What Shipped:**
+- `COLLABORATION_CONVENTIONS.md` v1.0 — multi-writer protocol for the shared
+  drive: claim-before-edit, atomic writes, git hygiene, agent edit-tool
+  guidance, file-ownership map, incident log.
+- `Tools/collab/claim.py` (TTL claims + scan/status) and
+  `Tools/collab/atomic_write.py` (temp + `os.replace()`).
+- Git hygiene: root `.gitignore` extended (`.env`, `*.db`, `*.jsonl`,
+  `claims/`, `*.lock`, `Tools/_scratch/`); `volusia.db` + `fetch_log.jsonl`
+  untracked so `git status` stays clean between pipeline runs.
+- `CONTRIBUTING.md` now links the multi-writer protocol.
+
+**Decisions Made:**
+- Repo is now git-enabled (`main`, committed by the concurrent writer on
+  2026-09-03). Other machines must add the `safe.directory` exception (§4 of
+  the conventions doc) before `git status` works.
+- Generated artifacts are never committed again.
+
+**Action Items (next):**
+1. Each machine that edits this repo: run the `safe.directory` one-liner.
+2. Add `busy_timeout`/`timeout=30` to `refresh_v2.py` DB connects (pipeline
+   owner; recommended in §5 of the conventions doc).
+3. Decide whether `volusia.db` moves local/Postgres (WAL then possible).
+
 ---
 
 Document owner: Project Volusia Ops / Communications Lead

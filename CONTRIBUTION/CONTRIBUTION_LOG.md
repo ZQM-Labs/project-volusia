@@ -46,6 +46,7 @@ Each entry:
 | 2026-09-03 | P1-011 | contribution_api | ZQM Labs | ACCEPTED | contribution_api.py hardened — content validation, idempotency, optional API key, business-day ETA, root metadata | Exec Sponsor |
 | 2026-09-03 | P1-012 | fetcher_package | ZQM Labs | ACCEPTED | volusia_data.fetchers restored (adapters over refresh_v2) | Exec Sponsor |
 | 2026-09-03 | P1-013 | docs_q4 | ZQM Labs | ACCEPTED | Q4_2026_DELIVERY_STATUS.md, DATA_ASSET_AUDIT_VOLUSIA.md, TOOLS_CATALOG.md updates | Exec Sponsor |
+| 2026-09-03 | P1-014 | collab_conventions | ZQM Labs | ACCEPTED | COLLABORATION_CONVENTIONS.md v1.0 + Tools/collab/ helpers + .gitignore hygiene | Exec Sponsor |
 
 ---
 

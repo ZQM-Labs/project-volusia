@@ -25,3 +25,19 @@ Thank you for your interest in contributing!
 ## Questions?
 
 Open an issue or discussion in the repository.
+
+---
+
+## Multi-Writer Conventions (Shared Drive)
+
+This repository is edited by humans AND AI agents on a shared network drive =
+they can collide. Before editing:
+
+1. Read [`COLLABORATION_CONVENTIONS.md`](COLLABORATION_CONVENTIONS.md) — the
+   multi-writer protocol (claims, atomic writes, git hygiene).
+2. Claim the file you will edit with
+   [`Tools/collab/claim.py`](Tools/collab/claim.py).
+3. Re-read the file immediately before every write; never edit from a stale
+   snapshot.
+4. Verify after every write (re-read; `py_compile` for Python).
+5. Release the claim when done and announce in `CONTRIBUTION_LOG.md`.
