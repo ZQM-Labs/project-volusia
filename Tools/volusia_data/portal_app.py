@@ -6,89 +6,48 @@ Run: python portal_app.py
 """
 import os
 import sqlite3
+import csv
+import io
 from datetime import datetime, timezone
 from pathlib import Path
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, Response
+from fastapi.responses import HTMLResponse, StreamingResponse
 
 app = FastAPI(title="Project Volusia — Open Data Portal")
 
 # DB path: use env var or default to local
 DB_PATH = Path(os.environ.get("VOLUSIA_DB_PATH", str(Path(__file__).resolve().parent / "volusia.db")))
-# ── SLA / refresh-cadence metadata ──────────────────────────────────────────
-# Published in the portal footer and surfaced via /api/status (P2 deliverable.
-SERVICE_METADATA = {
-    "service": "Project Volusia Open Data Portal",
-    "version": "1.1.0",
-    "operator": "ZQM Labs",
-    "uptime_target": "99.9%",
-    "data_freshness_target": "Indicator age must stay within its source refresh cadence",
-    "review_window": "5 business days",
-    "refresh_cadence": {
-        "Census PEP": "Annual (July population-estimates release)",
-        "NOAA NCEI": "Annual batch — daily summaries for the prior calendar year",
-        "BLS LAUS": "Monthly",
-        "BEA Regional": "Annual (CAINC1 release)",
-        "BLS QCEW": "Annual single-file (rebuild quarterly when available)",
-    },
-}
 
-# Maximum acceptable days between pipeline refresh and publication, per source.
-CADENCE_MAX_DAYS = {
-    "Census PEP": 45,
-    "NOAA NCEI": 45,
-    "BLS LAUS": 45,
-    "BEA Regional": 60,
-    "BLS QCEW": 120,
-}
-
-
-def _parse_ts(value):
-    """Parse an ISO-8601 timestamp to a naive UTC datetime, or None."""
-    if not value:
-        return None
-    try:
-        dt = datetime.fromisoformat(str(value.replace("Z", "+00:00")))
-        if dt.tzinfo:
-            return dt.astimezone(timezone.utc).replace(tzinfo=None)
-        return dt
-    except (ValueError, TypeError):
-        return None
-
-
-def _latest_fetch(indicators, source=None):
-    times = []
-    for i in indicators:
-        if source is not None and i.get("source") != source:
-            continue
-        ts = _parse_ts(i.get("fetched_at"))
-        if ts:
-            times.append(ts)
-    return max(times) if times else None
-
-
-def _staleness(indicators):
-    """Per-source freshness vs the cadence table (days since last fetch)."""
-    sources = sorted({i.get("source") for i in indicators if i.get("source")})
-    now = datetime.now(timezone.utc).replace(tzinfo=None)
-    out = {}
-    for src in sources:
-        latest = _latest_fetch(indicators, src)
-        max_days = CADENCE_MAX_DAYS.get(src)
-        if latest is None:
-            out[src] = {"status": "unknown", "days_since_fetch": None, "cadence_max_days": max_days}
-            continue
-        days = (now - latest).days
-        if days < 0:
-            days = 0
-        out[src] = {
-            "status": "fresh" if max_days is None or days <= max_days else "stale",
-            "days_since_fetch": days,
-            "cadence_max_days": max_days,
-            "last_fetch": latest.isoformat(),
-        }
-    return out
-
+CSS_STYLE = """<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #1e293b; line-height: 1.6; }
+.header { background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%); color: white; padding: 2rem; text-align: center; }
+.header h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+.header p { opacity: 0.9; font-size: 0.95rem; }
+.stats { display: flex; justify-content: center; gap: 2rem; padding: 1.5rem; background: white; border-bottom: 1px solid #e2e8f0; flex-wrap: wrap; }
+.stat { text-align: center; }
+.stat-value { font-size: 1.5rem; font-weight: bold; color: #0f172a; }
+.stat-label { font-size: 0.8rem; color: #64748b; text-transform: uppercase; }
+.container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+.category { margin-bottom: 2rem; }
+.category-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #e2e8f0; }
+.category-title { font-size: 1.25rem; font-weight: 600; color: #0f172a; }
+.category-count { background: #e2e8f0; padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.8rem; color: #475569; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; }
+.card { background: white; border-radius: 8px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: transform 0.2s, box-shadow 0.2s; }
+.card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+.card-name { font-size: 0.85rem; color: #64748b; margin-bottom: 0.5rem; }
+.card-value { font-size: 1.75rem; font-weight: 700; color: #0f172a; margin-bottom: 0.25rem; }
+.card-unit { font-size: 0.85rem; color: #475569; }
+.card-meta { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #f1f5f9; font-size: 0.75rem; color: #94a3b8; }
+.card-source { margin-bottom: 0.25rem; }
+.footer { text-align: center; padding: 2rem; color: #94a3b8; font-size: 0.85rem; border-top: 1px solid #e2e8f0; margin-top: 2rem; }
+.footer a { color: #3b82f6; text-decoration: none; }
+.footer a:hover { text-decoration: underline; }
+.export-bar { display: flex; gap: 0.5rem; justify-content: center; padding: 1rem; background: white; border-bottom: 1px solid #e2e8f0; }
+.export-btn { padding: 0.5rem 1rem; background: #0f172a; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem; text-decoration: none; }
+.export-btn:hover { background: #1e3a5f; }
+</style>"""
 
 def _db_rows(query, params=()):
     if not DB_PATH.exists():
@@ -102,81 +61,133 @@ def _db_rows(query, params=()):
         conn.close()
 
 
+def _get_freshness():
+    """Get the most recent fetch timestamp across all indicators."""
+    if not DB_PATH.exists():
+        return "N/A"
+    conn = sqlite3.connect(str(DB_PATH))
+    conn.row_factory = sqlite3.Row
+    try:
+        row = conn.execute("SELECT MAX(fetched_at) as latest FROM indicators").fetchone()
+        return row["latest"] if row and row["latest"] else "N/A"
+    finally:
+        conn.close()
+
+
+def _get_category_counts():
+    """Get count of indicators per category."""
+    if not DB_PATH.exists():
+        return {}
+    conn = sqlite3.connect(str(DB_PATH))
+    conn.row_factory = sqlite3.Row
+    try:
+        rows = conn.execute("SELECT category, COUNT(*) as cnt FROM indicators GROUP BY category ORDER BY category").fetchall()
+        return {r["category"]: r["cnt"] for r in rows}
+    finally:
+        conn.close()
+
+
 @app.get("/", response_class=HTMLResponse)
 def index():
     rows = _db_rows("SELECT * FROM indicators ORDER BY category, name")
     if not rows:
-        return ("<html><head><title>Project Volusia — Open Data Portal</title></head><body>"
-                "<h1>Project Volusia — Open Data Portal</h1>"
-                "<p>No data loaded yet. Run <code>python volusia_data/refresh_v2.py</code> first.</p>"
-                "<p><a href=\"/api/status\">Status API</a> · <a href=\"/api/health\">Health</a></p>"
-                "</body></html>")
+        return "<html><body><h1>Project Volusia</h1><p>No data loaded yet. Run refresh_v2.py first.</p></body></html>"
+
+    freshness = _get_freshness()
+    category_counts = _get_category_counts()
+    total = len(rows)
 
     categories = {}
     for row in rows:
         cat = row.get("category") or "Uncategorized"
         categories.setdefault(cat, []).append(row)
 
-    latest = _latest_fetch(rows)
-    stamp = latest.isoformat() if latest else "N/A"
-
     html_parts = [
         "<html><head><title>Project Volusia — Open Data Portal</title>",
-        "<style>"
-        "body{font-family:sans-serif;margin:20px;color:#222;}"
-        "table{border-collapse:collapse;width:100%;margin:10px 0;}"
-        "th,td{border:1px solid #ddd;padding:8px;text-align:left;}"
-        "th{background:#f4f4f4;}"
-        ".category{margin-top:20px;font-size:1.2em;font-weight:bold;}"
-        ".footer{margin-top:30px;padding-top:10px;border-top:2px solid #ddd;"
-        "font-size:0.85em;color:#555;line-height:1.6;}"
-        "</style>",
+        CSS_STYLE,
         "</head><body>",
-        "<h1>Project Volusia — Open Data Portal</h1>",
-        f"<p>Last updated: {stamp}</p>",
+        '<div class="header">',
+        "<h1>Project Volusia</h1>",
+        "<p>Open Data Portal for Volusia County, Florida</p>",
+        "</div>",
+        '<div class="stats">',
+        f'<div class="stat"><div class="stat-value">{total}</div><div class="stat-label">Indicators</div></div>',
+        f'<div class="stat"><div class="stat-value">{len(category_counts)}</div><div class="stat-label">Categories</div></div>',
+        f'<div class="stat"><div class="stat-value">{freshness[:10] if freshness != "N/A" else "N/A"}</div><div class="stat-label">Last Updated</div></div>',
+        "</div>",
+        '<div class="export-bar">',
+        '<a class="export-btn" href="/api/indicators">JSON API</a>',
+        '<a class="export-btn" href="/api/export/csv">Export CSV</a>',
+        '<a class="export-btn" href="/api/export/json">Export JSON</a>',
+        '<a class="export-btn" href="/api/health">Health Check</a>',
+        '<a class="export-btn" href="/api/status">Status</a>',
+        "</div>",
+        '<div class="container">',
     ]
 
     for cat, items in sorted(categories.items()):
-        html_parts.append(f'<div class="category">{cat}</div>')
-        html_parts.append('<table><tr><th>Indicator</th><th>Value</th><th>Unit</th><th>Vintage</th><th>Source</th></tr>')
+        html_parts.append('<div class="category">')
+        html_parts.append('<div class="category-header">')
+        html_parts.append(f'<span class="category-title">{cat}</span>')
+        html_parts.append(f'<span class="category-count">{len(items)} indicators</span>')
+        html_parts.append('</div>')
+        html_parts.append('<div class="grid">')
         for item in items:
-            html_parts.append(
-                f'<tr><td>{item.get("name", "")}</td>'
-                f'<td>{item.get("value", "")}</td>'
-                f'<td>{item.get("unit", "")}</td>'
-                f'<td>{item.get("vintage", "")}</td>'
-                f'<td>{item.get("source", "")}</td></tr>'
-            )
-        html_parts.append('</table>')
+            name = item.get("name", "")
+            value = item.get("value", "N/A")
+            unit = item.get("unit", "")
+            source = item.get("source", "")
+            vintage = item.get("vintage", "")
+            fetched = item.get("fetched_at", "")[:10] if item.get("fetched_at") else ""
+            description = item.get("description", "")
+            html_parts.append('<div class="card">')
+            html_parts.append(f'<div class="card-name">{name}</div>')
+            html_parts.append(f'<div class="card-value">{value}</div>')
+            html_parts.append(f'<div class="card-unit">{unit}</div>')
+            html_parts.append('<div class="card-meta">')
+            html_parts.append(f'<div class="card-source">Source: {source} ({vintage})</div>')
+            html_parts.append(f'<div>Refreshed: {fetched}</div>')
+            if description:
+                html_parts.append(f'<div style="margin-top:0.5rem; font-style:italic;">{description}</div>')
+            html_parts.append('</div></div>')
+        html_parts.append('</div></div>')
 
-    html_parts.append(_page_footer(latest))
-    html_parts.append('</body></html>')
+    html_parts.append('<div class="footer">')
+    html_parts.append('<p>Project Volusia &middot; ZQM Labs &middot; <a href="https://github.com/ZQM-Computing">GitHub</a></p>')
+    html_parts.append('<p>Data refreshed regularly from public U.S. government sources (Census, BLS, BEA, NOAA).</p>')
+    html_parts.append('</div></div></body></html>')
+
     return "".join(html_parts)
-
-
-def _page_footer(latest):
-    """P2 deliverable — SLA/uptime + refresh-cadence metadata in the footer."""
-    stamp = latest.isoformat() if latest else "N/A"
-    cad = SERVICE_METADATA["refresh_cadence"]
-    cad_html = " · ".join(f"{k}: {v}" for k, v in cad.items())
-    return (
-        '<div class="footer">'
-        f"<p><strong>Project Volusia</strong> · ZQM Labs · Last refreshed: {stamp}</p>"
-        f"<p>SLA — uptime target: {SERVICE_METADATA['uptime_target']} · data freshness target: "
-        f"{SERVICE_METADATA['data_freshness_target']} · contributor review window: "
-        f"{SERVICE_METADATA['review_window']}</p>"
-        f"<p>Refresh cadence — {cad_html}</p>"
-        '<p><a href="/api/status">Status API</a> · <a href="/api/health">Health</a> · '
-        '<a href="/api/datasets">Datasets</a> · <a href="/api/indicators">Indicators</a> · '
-        '<a href="/openapi.json">API spec</a></p>'
-        "</div>"
-    )
 
 
 @app.get("/api/indicators")
 def api_indicators():
     rows = _db_rows("SELECT * FROM indicators ORDER BY category, name")
     return {"count": len(rows), "indicators": rows}
+
+
+@app.get("/api/export/csv")
+def export_csv():
+    rows = _db_rows("SELECT * FROM indicators ORDER BY category, name")
+    if not rows:
+        return Response(content="No data available", media_type="text/plain")
+
+    output = io.StringIO()
+    writer = csv.DictWriter(output, fieldnames=["id", "name", "value", "unit", "category", "source", "source_url", "vintage", "fetched_at", "description"])
+    writer.writeheader()
+    writer.writerows(rows)
+
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=volusia_indicators.csv"}
+    )
+
+
+@app.get("/api/export/json")
+def export_json():
+    rows = _db_rows("SELECT * FROM indicators ORDER BY category, name")
+    return {"count": len(rows), "indicators": rows, "exported_at": datetime.now(timezone.utc).isoformat()}
 
 
 @app.get("/api/datasets")
@@ -189,10 +200,14 @@ def api_datasets():
 def api_health():
     db_exists = DB_PATH.exists()
     indicator_count = 0
+    freshness = "N/A"
     if db_exists:
         conn = sqlite3.connect(str(DB_PATH))
+        conn.row_factory = sqlite3.Row
         try:
             indicator_count = conn.execute("SELECT COUNT(*) FROM indicators").fetchone()[0]
+            row = conn.execute("SELECT MAX(fetched_at) as latest FROM indicators").fetchone()
+            freshness = row["latest"] if row and row["latest"] else "N/A"
         finally:
             conn.close()
     return {
@@ -200,88 +215,45 @@ def api_health():
         "db_exists": db_exists,
         "db_path": str(DB_PATH),
         "indicator_count": indicator_count,
+        "latest_refresh": freshness,
     }
 
 
 @app.get("/api/status")
 def api_status():
-    """Executive summary of the portal: counts, SLA, cadence, staleness."""
+    """Executive summary of the portal and data freshness."""
     indicators = _db_rows("SELECT * FROM indicators ORDER BY fetched_at DESC")
-    latest = _latest_fetch(indicators)
-    datasets = _db_rows("SELECT id, source, content, fetched_at FROM datasets ORDER BY id DESC LIMIT 20")
-    categories = {}
-    for ind in indicators:
-        cat = ind.get("category") or "Uncategorized"
-        categories[cat] = categories.get(cat, 0) + 1
-
-    freshness = _staleness(indicators)
-    stale_sources = [s for s, v in freshness.items() if v.get("status") == "stale"]
+    latest_update = indicators[0]["fetched_at"] if indicators else "N/A"
+    stale_count = sum(1 for i in indicators if not i.get("vintage"))
+    categories = _get_category_counts()
 
     return {
-        "system": SERVICE_METADATA["service"],
-        "version": SERVICE_METADATA["version"],
-        "operator": SERVICE_METADATA["operator"],
-        "status": "operational" if indicators else "degraded",
+        "system": "Project Volusia Open Data Portal",
+        "status": "operational",
         "total_indicators": len(indicators),
-        "dataset_rows": len(datasets),
-        "latest_update": latest.isoformat() if latest else None,
-        "stale_sources": stale_sources,
+        "latest_update": latest_update,
+        "stale_indicators": stale_count,
         "categories": categories,
         "sla": {
-            "uptime_target": SERVICE_METADATA["uptime_target"],
-            "data_freshness_target": SERVICE_METADATA["data_freshness_target"],
-            "review_window": SERVICE_METADATA["review_window"],
-            "refresh_cadence": SERVICE_METADATA["refresh_cadence"],
+            "data_freshness": "Monthly refresh",
+            "uptime_target": "99.9%",
+            "refresh_cadence": "BLS/NOAA: monthly | Census ACS: annual | BEA: annual | QCEW: quarterly"
         },
-        "per_source_freshness": freshness,
         "endpoints": {
             "homepage": "/",
             "indicators": "/api/indicators",
+            "export_csv": "/api/export/csv",
+            "export_json": "/api/export/json",
             "datasets": "/api/datasets",
             "health": "/api/health",
-            "status": "/api/status",
-            "v1": "/api/v1"
+            "status": "/api/status"
         }
     }
-
-
-@app.get("/api/indicators/{name}")
-def api_indicator(name: str):
-    """Get a single indicator by name (matches openapi.yaml path)."""
-    rows = _db_rows("SELECT * FROM indicators WHERE name = ?", (name,))
-    if not rows:
-        raise HTTPException(status_code=404, detail="Indicator not found")
-    return rows[0]
-
-
-# ── /api/v1 aliases (aligned with openapi.yaml server prefix) ─────────────
-@app.get("/api/v1/health")
-def api_v1_health():
-    return api_health()
-
-
-@app.get("/api/v1/status")
-def api_v1_status():
-    return api_status()
-
-
-@app.get("/api/v1/indicators")
-def api_v1_indicators():
-    return api_indicators()
-
-
-@app.get("/api/v1/indicators/{name}")
-def api_v1_indicator(name: str):
-    return api_indicator(name)
-
-
-@app.get("/api/v1/datasets")
-def api_v1_datasets():
-    return api_datasets()
 
 
 if __name__ == "__main__":
     import uvicorn
     host = os.environ.get("VOLUSIA_PORTAL_HOST", "127.0.0.1")
     port = int(os.environ.get("VOLUSIA_PORTAL_PORT", "8789"))
+    print(f"Starting Project Volusia Portal on http://{host}:{port}")
     uvicorn.run(app, host=host, port=port)

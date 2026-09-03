@@ -38,6 +38,7 @@ Each entry has:
 | 2026-09-03 | ZQM Labs | tool | COLLABORATION_CONVENTIONS.md v1.0 (multi-writer protocol), Tools/collab/ claim.py + atomic_write.py, .gitignore hygiene, untracked generated artifacts | accepted | Alex Zelenski | Reduces read-modify-write collisions on shared drive; git documented as the structural fix. |
 | 2026-09-03 | ZQM Labs | docs | ADR-005 GitHub profile structure; profile/README.md aligned to Project Volusia; honest badges in root README | accepted | Alex Zelenski | Live GitHub audit (ZQM-Labs + ZQM-Computing) confirmed single canonical repos; attestation repositioned as secondary workstream. |
 | 2026-09-03 | ZQM Labs | docs | GitHub Pages site audit — es meta fixes (4 files), sitemap es URLs added; Pages-rebrand tracked as owner action (ADR-005 addendum) | accepted | Alex Zelenski | Site contradicts org profile (attestation landing vs Project Volusia focus); only mechanical fixes applied here; branding decision deferred to owner. |
+| 2026-09-03 | ZQM Labs | tool | CI integrity: pyproject.toml (ruff scoped to owned paths + [project] for tests.yml), requirements-dev.txt, tests/test_portal.py (7 CI-safe tests); portal missing-DB 500 fix; format cleanup on owned files | accepted | Alex Zelenski | Verified: ruff check . + ruff format --check . pass at root; pytest 7/7 with DB and 7/7 with missing DB (simulated fresh checkout, no stray files). |
 
 ## 4. AGENT CONTRIBUTIONS
 

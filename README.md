@@ -2,6 +2,7 @@
 
 <p align="left">
   <img src="https://github.com/ZQM-Labs/project-volusia/actions/workflows/ci.yml/badge.svg" alt="CI" />
+  <img src="https://github.com/ZQM-Labs/project-volusia/actions/workflows/tests.yml/badge.svg" alt="Tests" />
   <img src="https://github.com/ZQM-Labs/project-volusia/actions/workflows/volusia-pipeline.yml/badge.svg" alt="Data pipeline" />
 </p>
 

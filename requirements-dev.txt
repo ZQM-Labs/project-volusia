@@ -1,0 +1,10 @@
+# Project Volusia — dev/test dependencies (CI: tests.yml installs this)
+# Order matters: base runtime deps first (relative to this file's folder).
+-r Tools/requirements.txt
+
+# Test toolchain
+pytest>=8.0
+httpx>=0.27
+
+# Linting (matches ci.yml's ruff job)
+ruff>=0.16

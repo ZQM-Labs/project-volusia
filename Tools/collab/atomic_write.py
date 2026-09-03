@@ -10,6 +10,7 @@ Usage:
 
 See COLLABORATION_CONVENTIONS.md at the repo root for the full protocol.
 """
+
 import argparse
 import os
 import sys

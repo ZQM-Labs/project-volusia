@@ -37,3 +37,5 @@ desktop.ini
 claims/
 *.lock
 Tools/_scratch/
+.ruff_cache/
+*.egg-info/

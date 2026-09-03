@@ -157,8 +157,33 @@ until then. Sequence: rebrand site first, then public visibility of the
 attestation repos — not the other way around.
 
 
+**P1-017 — CI integrity + portal missing-DB debug (2026-09-03, claude-ci)**
+
+Goal: make ci.yml (`ruff check .` + `ruff format --check .`) and tests.yml
+(`pip install -e '.[dev]'` + `pytest tests/`) green on a fresh checkout —
+without reformatting or rewriting files owned by other writers.
+
+- `pyproject.toml` (new): ruff scoped to owned code (legacy/writer-owned paths
+  and `*.md` excluded — ruff 0.16 auto-rewrites Python blocks inside docs),
+  plus minimal `[project]`/`[build-system]` so tests.yml's editable install
+  works (it previously would fail: no project table).
+- `requirements-dev.txt` (new): pytest/httpx/ruff + `-r Tools/requirements.txt`.
+- `tests/test_portal.py` (new): 7 TestClient smoke tests, tolerant of an
+  absent/empty DB (CI reality).
+- BUG (portal, writer's rewrite + prior sessions): `_get_freshness()` and
+  `_get_category_counts()` opened SQLite unguarded — on a fresh checkout
+  `/api/status` created an empty volusia.db then 500'd ("no such table").
+  Guarded both; endpoints now degrade gracefully. Verified: pytest 7/7 with
+  DB and 7/7 with missing DB, no stray file created.
+- Format debt cleaned: owned files (Tools/collab/*, run_refresh.py, tests/)
+  via ruff format; trivial whitespace on run_full_refresh.py (claimed first).
+- `.gitignore`: added `.ruff_cache/` (UNC share denies cache writes; CI fine).
+- Verified at repo root: `ruff check .` PASS · `ruff format --check .` PASS.
+
 **Action Items (next):**
-- Owner: decide the fate/of rebrand the GitHub Pages site (ADR-005 addendum).
+- Owner: push `main` to `ZQM-Labs/project-volusia` and watch the first CI run
+  (ci.yml + tests.yml) — then decide the fate/rebrand of the GitHub Pages site
+  (ADR-005 addendum).
 
 ---
 

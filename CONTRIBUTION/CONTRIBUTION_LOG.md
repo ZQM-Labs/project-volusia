@@ -49,6 +49,7 @@ Each entry:
 | 2026-09-03 | P1-014 | collab_conventions | ZQM Labs | ACCEPTED | COLLABORATION_CONVENTIONS.md v1.0 + Tools/collab/ helpers + .gitignore hygiene | Exec Sponsor |
 | 2026-09-03 | P1-015 | github_profile | ZQM Labs | ACCEPTED | ADR-005 GitHub profile structure; profile/README aligned to Project Volusia; honest README badges | Exec Sponsor |
 | 2026-09-03 | P1-016 | github_pages_audit | ZQM Labs | ACCEPTED | GitHub Pages site audit: es meta fixes, sitemap es URLs; Pages rebrand deferred as owner action (ADR-005 addendum) | Exec Sponsor |
+| 2026-09-03 | P1-017 | ci_integrity | ZQM Labs | ACCEPTED | pyproject.toml + requirements-dev.txt + tests/test_portal.py; portal missing-DB guard; ruff lint+format green at root | Exec Sponsor |
 
 ---
 

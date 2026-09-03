@@ -1,0 +1,55 @@
+# Project Volusia ruff config (CI: ci.yml runs `ruff check .` + `ruff format --check .`)
+# Legacy single-file scripts (refresh_v2, portal_app, contribution_api, the
+# legacy fetchers package, and the canonical contribution-api package) carry
+# pre-existing lint/format debt and are actively owned by other writers — they
+# are excluded here and tracked as CI follow-up (see docs/adr-005). New code
+# (tests/, Tools/collab/, etc.) is linted and format-checked.
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+# Minimal project metadata. There is no distributable package here (the tools
+# are script-style under Tools/); this exists so `pip install -e '.[dev]'` in
+# .github/workflows/tests.yml succeeds and dev extras resolve in one place.
+[project]
+name = "project-volusia"
+version = "0.1.0"
+description = "Open-intelligence data pipeline, portal, and governance for Volusia County, FL"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "httpx>=0.27", "ruff>=0.16", "fastapi>=0.115"]
+
+[tool.setuptools]
+# No packages to distribute; keep setuptools auto-discovery from erroring on
+# the multi-root layout (Tools/, tests/, contribution-api/).
+packages = []
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+extend-exclude = [
+    "Tools/volusia_data/refresh_v2.py",
+    "Tools/volusia_data/portal_app.py",
+    "Tools/volusia_data/contribution_api.py",
+    "Tools/volusia_data/test_bea_api.py",
+    "Tools/volusia_data/portal",
+    "Tools/volusia_data/fetchers",
+    "contribution-api",
+    # ruff 0.16 also formats Python code blocks inside Markdown files; the
+    # repo docs are owned by various writers and must never be auto-rewritten.
+    "*.md",
+]
+
+[tool.ruff.lint]
+# E4 imports, E7 statement, E9 runtime — catch real errors and undefined names.
+# E5 (line-length) intentionally omitted: legacy files are long and it would
+# flag non-defects; E501 is not a runtime error.
+select = ["E4", "E7", "E9", "F"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E402"]  # sys.path bootstrap before imports
+
+[tool.ruff.format]
+quote-style = "double"

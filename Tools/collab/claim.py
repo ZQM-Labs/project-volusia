@@ -15,6 +15,7 @@ Usage:
 Exit codes: 0 ok, 1 usage/error, 2 claim refused (held by someone else).
 See COLLABORATION_CONVENTIONS.md at the repo root for the full protocol.
 """
+
 import argparse
 import json
 import os
@@ -62,8 +63,10 @@ def claim(path, owner: str, minutes: int, force: bool) -> int:
     }
     existing = _read(lock) if lock.exists() else None
     if existing and existing.get("expires_epoch", 0) > _now() and not force:
-        print(f"REFUSED: {data['file']} is claimed by {existing.get('owner')} "
-              f"until {existing.get('expires_at')} — pick different work or ask the owner.")
+        print(
+            f"REFUSED: {data['file']} is claimed by {existing.get('owner')} "
+            f"until {existing.get('expires_at')} — pick different work or ask the owner."
+        )
         return 2
     if existing:
         reason = "expired" if existing.get("expires_epoch", 0) <= _now() else "forced"
