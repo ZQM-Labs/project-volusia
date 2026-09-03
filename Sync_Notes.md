@@ -134,6 +134,32 @@ workstreams behind the Project Volusia strategic focus.
   the GitHub side (see ADR-005).
 - CI follow-ups: ruff config, real test suite, public scanner repo.
 
+### 2026-09-03 (Post-change — GitHub Pages Site Audit)
+
+**Read (deeper):** The GitHub Pages site (10 HTML pages + `robots.txt` +
+`sitemap.xml`) is entirely attestation-branded ("attestation & council", no
+Volusia mention), claims "7 public repos" (6 attestation repos) while only
+`project-volusia` is public to a logged-out visitor. Spanish pages carried
+duplicated meta `content` attributes; `sitemap.xml` omitted all es URLs;
+`contact.html` masks the phone number。
+
+
+
+**Fixed (P1-016):**
+- Removed duplicated English `content` attrs in the four `*-es.html` meta
+  descriptions (kept the Spanish strings).
+- Added the five Spanish pages to `sitemap.xml` (mirrored priorities/changefreq).
+
+**Decision (ADR-005 addendum):** The GitHub org is the authoritative
+profile; the Pages site contradicts it (stale/aspirational). Owner action:
+rebrand the Pages site Volusia-first (attestation as services sub-page) or park it
+until then. Sequence: rebrand site first, then public visibility of the
+attestation repos — not the other way around.
+
+
+**Action Items (next):**
+- Owner: decide the fate/of rebrand the GitHub Pages site (ADR-005 addendum).
+
 ---
 
 Document owner: Project Volusia Ops / Communications Lead

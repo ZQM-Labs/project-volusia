@@ -57,3 +57,57 @@ inconsistencies:
   this ADR records the intent for whoever executes them.
 
 Related: COLLABORATION_CONVENTIONS.md §4 (git protocol), docs/ADR.md
+---
+
+## Deeper Findings — GitHub Pages Site Audit (2026-09-03
+
+Reading the repository's GitHub Pages site (`zqm-labs.github.io/ZQM-Labs/`;
+10 static HTML pages + `robots.txt` + `sitemap.xml`) surfaced more divergence:
+
+1. **Site branding is the OPPOSITE of the org profile.** Every page fronts
+   "attestation & council" (`ZQM Labs: umbrella organization for attestation,
+   security, and AI tooling`; brand-sub `— attestation & council`); **no page
+   mentions Project Volusia / Volusia County at all**. The org's canonical surfaces
+   (org description, root README, `profile/README.md` — ADR-005) say
+   Project Volusia first.
+2. **"Public surface: 7 public repos" badge** in the site nav — but only
+   `project-volusia` is public to a logged-out visitor today. The 6 attestation
+   repos (pqc-readiness-toolkit, zqm-attestation-toolkit, zqm-public-tools,
+   awesome-windows-attestation, zqm-security-policy, zqm-shield) are not
+   yet visible publicly.
+
+3. **Mechanical defects found and fixed（P1-016):**
+   - `*-es.html` meta descriptions carried duplicated `content` attributes
+     (invalid HTML). The redundant English duplicates were removed; the Spanish
+     strings kept。
+   - `sitemap.xml` omitted all five Spanish pages; added them（priorities/
+     changefreq mirrored from the EN pages)。
+   - `contact.html` masks the phone number (`+138****9994`) — intentional
+     (screenshot-friendly public surface），noted for the owner。
+
+## Decision (addendum)
+
+- The GitHub **org** is the authoritative profile（Project Volusia first, ADR-005）。
+- The GitHub **Pages site** is stale/aspirational: attestation landing，
+  "7 public repos" that aren't public, Spanish pages half-translated, masked
+  phone域。Owner decision needed**: rebrand the Pages site Volusia-first
+  （attestation as services sub-page）or park it as a legacy/archive index／
+  until then。Do not let the site contradict the org profile。
+- **Sequencing bit**: making the six attestation repos public without first fixing
+  the site would amplify the contradiction — rebrand the site first, then
+  visibility of the attestation portfolio, not the other way around。
+
+
+
+Consequences: a consistent public narrative depends on aligning the Pages site；
+this is an owner action（approved scope），not yet executed。Related：the
+README "Repos" table（≥25 repos, many internal/private），the site badge "7
+public" and the live org "1 public" are three different truths that should converge
+after the rebrand。
+
+
+
+
+
+Related: ADR-005（main decision）, COLLABORATION_CONVENTIONS.md §4（git protocol）；
+Document owner: Project Volusia Ops / Communications Lead

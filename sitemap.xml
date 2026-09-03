@@ -5,4 +5,9 @@
   <url><loc>https://zqm-labs.github.io/ZQM-Labs/projects.html</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://zqm-labs.github.io/ZQM-Labs/services.html</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://zqm-labs.github.io/ZQM-Labs/advanced.html</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://zqm-labs.github.io/ZQM-Labs/index-es.html</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://zqm-labs.github.io/ZQM-Labs/contact-es.html</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://zqm-labs.github.io/ZQM-Labs/projects-es.html</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://zqm-labs.github.io/ZQM-Labs/services-es.html</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://zqm-labs.github.io/ZQM-Labs/advanced-es.html</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
 </urlset>
