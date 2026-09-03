@@ -229,6 +229,40 @@ unresolvable `uses:` reference (GitHub downloads all actions before step 1).
   passes on an unresolvable action. Check `uses:` refs against the registry
   (or pin to full commit SHAs) before pushing workflow changes.
 
+**P1-020 — permissions + format debug (2026-09-03, cline-p1-020)**
+
+After 1008aa1 (writer's docs/portal sweep):
+
+- `Tools/volusia_data/config.py`: whitespace-only reformat — the rewrite
+  tripped `ruff format --check` (Format check red). No logic change.
+- `security-scan.yml`: the rewrite dropped the `permissions:` block →
+  CodeQL upload-sarif failed with "Resource not accessible by integration"
+  (run 33772220066). Restored `security-events: write` (+ `actions: read`)
+  and bumped upload-sarif v3 → v4.
+
+**P1-021 — three workflows, three observed failures (2026-09-03, cline-p1-021)**
+
+- `security-scan.yml` — gitleaks: `gitleaks/gitleaks-action@v2` requires a
+  paid `GITLEAKS_LICENSE` on org repos and exits before scanning anything
+  (run 33780238618). Restored the license-free official container image.
+  `continue-on-error: true` is TEMPORARY: remove it once the committed API
+  keys are rotated so true positives block builds.
+- `supply-chain-scan.yml` — push/PR triggers were restored (83b37ff) but the
+  scanner repo is still private, so the download 404s on every push
+  (run 33780238547). Now a curl probe gates every scanner step on HTTP 200
+  (clean skip until the repo goes public). Also fixed the SARIF upload:
+  `$(date …)` never expands inside a `with:` block and the file only exists
+  when the scan ran — upload the reports directory instead, gated on the probe.
+- `volusia-pipeline.yml` — (a) `gh auth login --with-token <` is bash
+  redirection, unparseable on windows-latest PowerShell → set `GH_TOKEN`
+  (gh auto-detects it) + `gh auth status`; (b) `python -m
+  volusia_data.refresh_v2` cannot resolve (no package/module there) → run
+  `python refresh_v2.py` directly; (c) "Push updated DB" disabled
+  (`if: false`): `*.db` is gitignored per the P1-014 convention, and CI
+  committing the DB would race local writers on main — the artifact upload
+  already persists every refresh. Re-enable with `git add -f` only if the
+  owner explicitly wants DB-in-git.
+
 ---
 
 Related: PROJECT_VOLUSIA_GOV.md, CONTRIBUTION_LOG.md

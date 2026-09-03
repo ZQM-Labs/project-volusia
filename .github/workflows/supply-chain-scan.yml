@@ -17,28 +17,43 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # P1-021: the scanner script lives in a private repo, so the download
+      # 404s for anonymous runners (observed: "Download scanner" fail, run
+      # 33780238547). Probe first and skip the scan cleanly instead of
+      # failing, until the scanner repo is made public (owner action).
+      - name: Scanner repo reachable?
+        id: scanner
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' https://raw.githubusercontent.com/ZQM-Labs/zqm-supply-chain-scanner/main/snyk_replacement.py)
+          echo "http_code=$code" >> "$GITHUB_OUTPUT"
+          echo "scanner repo HTTP $code"
       - uses: actions/setup-python@v7
         with:
           python-version: '3.11'
       - name: Install scanner
         run: pip install requests
       - name: Download scanner
+        if: steps.scanner.outputs.http_code == '200'
         run: |
           python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/ZQM-Labs/zqm-supply-chain-scanner/main/snyk_replacement.py', 'snyk_replacement.py')"
       - name: Run scan
+        if: steps.scanner.outputs.http_code == '200'
         run: |
           python snyk_replacement.py             --repo ${{ github.repository }}             --output both             --pr ${{ github.event.pull_request.number || 0 }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # P1-021: the old sarif_file used a $(date ...) path that is never
+      # shell-expanded inside a with: block (and the file only exists if the
+      # scan ran). Upload the reports directory instead, only when scanned.
       - name: Upload SARIF
+        if: steps.scanner.outputs.http_code == '200'
         uses: github/codeql-action/upload-sarif@v4
         with:
-          sarif_file: .zqm-security-reports/${{ github.repository }}/$(date -u +%Y%m%dT%H%M%SZ)-results.sarif
-        if: always()
+          sarif_file: .zqm-security-reports/
       - name: Upload findings artifact
         uses: actions/upload-artifact@v7
         with:
           name: supply-chain-scan-${{ github.run_id }}
-          path: .zqm-security-reports/${{ github.repository }}/
+          path: .zqm-security-reports/
           retention-days: 30
-        if: always()
+        if: always() && steps.scanner.outputs.http_code == '200'
