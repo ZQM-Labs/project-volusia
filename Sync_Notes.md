@@ -203,7 +203,8 @@ go red on arrival:
   without a paid `GITLEAKS_LICENSE` secret → replaced with the official
   license-free container image (`ghcr.io/gitleaks/gitleaks:latest`);
   (b) added the missing `permissions:` block (SARIF upload requires
-  `security-events: write`); (c) pinned `trivy-action@0.28.0` (was `@master`).
+  `security-events: write`); (c) pinned `trivy-action@v0.28.0` (was `@master`;
+  the `v` prefix is required — see P1-019).
 - `supply-chain-scan.yml` FIXED: automated triggers disabled
   (workflow_dispatch only) — it downloads its scanner from the non-public
   `ZQM-Labs/zqm-supply-chain-scanner` repo (HTTP 404 on every automated run).
@@ -213,9 +214,22 @@ go red on arrival:
   `Tools/volusia_data/refresh_v2.py` (BLS/BEA fallbacks). Rotate all three
   keys, keep them in repo Secrets only, then remove gitleaks'
   `continue-on-error` so true positives block builds.
+**P1-019 — CI hotfix: unresolvable trivy-action ref (2026-09-03, cline-p1-019)**
+
+The first real push (P1-018, `63e949f`) exposed a bug in that same commit:
+Security Scan failed in ~5 seconds at "Set up job" — the signature of an
+unresolvable `uses:` reference (GitHub downloads all actions before step 1).
+
+- Root cause: `aquasecurity/trivy-action@0.28.0` — trivy-action release tags
+  are **v-prefixed** (`v0.36.0` … `v0.11.1`, verified via the GitHub tags
+  API), so `@0.28.0` resolves to nothing.
+- Fix: `@0.28.0` → `@v0.28.0`; YAML re-validated locally; pushed and the
+  workflow re-verified on live Actions.
+- Lesson for all writers: YAML validity ≠ ref validity. `yaml.safe_load`
+  passes on an unresolvable action. Check `uses:` refs against the registry
+  (or pin to full commit SHAs) before pushing workflow changes.
 
 ---
 
-Document owner: Project Volusia Ops / Communications Lead
 Related: PROJECT_VOLUSIA_GOV.md, CONTRIBUTION_LOG.md
 Next review: Weekly

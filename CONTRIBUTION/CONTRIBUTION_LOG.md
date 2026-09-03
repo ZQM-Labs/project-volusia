@@ -51,6 +51,7 @@ Each entry:
 | 2026-09-03 | P1-016 | github_pages_audit | ZQM Labs | ACCEPTED | GitHub Pages site audit: es meta fixes, sitemap es URLs; Pages rebrand deferred as owner action (ADR-005 addendum) | Exec Sponsor |
 | 2026-09-03 | P1-017 | ci_integrity | ZQM Labs | ACCEPTED | pyproject.toml + requirements-dev.txt + tests/test_portal.py; portal missing-DB guard; ruff lint+format green at root | Exec Sponsor |
 | 2026-09-03 | P1-018 | push_safety | ZQM Labs | ACCEPTED | All workflows audited; security-scan.yml (gitleaks container, permissions, trivy pin) + supply-chain-scan.yml (dispatch-only) fixed; committed API keys flagged for rotation | Exec Sponsor |
+| 2026-09-03 | P1-019 | ci_hotfix | ZQM Labs | ACCEPTED | security-scan.yml trivy ref corrected @0.28.0 → @v0.28.0 (unresolvable ref failed job setup); verified green on GitHub Actions | Exec Sponsor |
 
 ---
 
