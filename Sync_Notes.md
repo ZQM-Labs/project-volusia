@@ -297,6 +297,25 @@ After 1008aa1 (writer's docs/portal sweep):
   `contribution_api.py`, script-mode-guarded flush in `portal_app.py`.
   Validated: 18/18 pass, `ruff check` clean on all committed paths.
 
+## P1-024 — Volusia Data Pipeline hotfix (first push-triggered run)
+
+- The writer's `573bc61` re-enabled pipeline triggers; its first real run on
+  `665d465` failed at the pip step: no `Tools/volusia_data/requirements.txt`
+  (error hidden by `2>/dev/null`) and an impossible fallback — `sqlite3` is
+  Python stdlib, not a pip distribution.
+- `f4b7a39` fixed four compounding defects while preserving the writer's
+  DB-push intent: conditional requirements install (fallback `pip install
+  requests`); `git add -f` for the gitignored `Tools/volusia_data/volusia.db`
+  (`refresh_v2.py:21` DB_PATH, ignored via `.gitignore:33 *.db`);
+  `git diff --cached --quiet` (the old unstaged diff was always quiet after
+  `git add`, so the commit could never fire); explicit
+  `permissions: contents: write` (default GITHUB_TOKEN is read-only on newer
+  orgs — same root cause as the P1-018 SARIF-upload 403).
+- Gotcha recorded for the conventions doc: `[skip ci]` in the hotfix commit
+  message suppressed every push-triggered workflow for that SHA (only
+  Dependabot's own check ran) — so pipeline verification rides on the
+  following docs push, and bot DB-push commits stay recursion-free.
+
 ---
 
 Related: PROJECT_VOLUSIA_GOV.md, CONTRIBUTION_LOG.md
