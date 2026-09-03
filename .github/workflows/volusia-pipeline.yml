@@ -4,21 +4,51 @@ on:
     - cron: "0 6,18 * * *"
   workflow_dispatch:
   push:
-    branches: [ main ]
-    paths:
-      - Tools/volusia_data/**
-      - .github/workflows/volusia-pipeline.yml
+    branches: [main]
+  pull_request:
+    branches: [main]
 jobs:
   refresh:
     runs-on: windows-latest
-    env:
-      CENSUS_API_KEY: ${{ secrets.CENSUS_API_KEY }}
-      BLS_API_KEY: ${{ secrets.BLS_API_KEY }}
-      BEA_API_KEY: ${{ secrets.BEA_API_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: pip install requests
-      - run: python Tools/volusia_data/refresh_v2.py
+      - name: Cache venv
+        uses: actions/cache@v4
+        with:
+          path: Tools/volusia_data/.venv
+          key: venv-${{ hashFiles('Tools/volusia_data/pyproject.toml', 'Tools/volusia_data/requirements*.txt') }}
+      - name: Configure GitHub CLI
+        run: |
+          gh auth login --with-token <${{ secrets.GITHUB_TOKEN }}
+          gh config set default_repository ZQM-Labs/project-volusia
+      - name: Install deps
+        run: pip install requests httpx
+        working-directory: Tools/volusia_data
+      - name: Export API keys
+        run: |
+          echo "CENSUS_API_KEY=${{ secrets.CENSUS_API_KEY }}" >> $GITHUB_ENV
+          echo "BLS_API_KEY=${{ secrets.BLS_API_KEY }}" >> $GITHUB_ENV
+          echo "BEA_API_KEY=${{ secrets.BEA_API_KEY }}" >> $GITHUB_ENV
+      - name: Run refresh
+        run: python -m volusia_data.refresh_v2
+        working-directory: Tools/volusia_data
+        env:
+          CENSUS_API_KEY: ${{ secrets.CENSUS_API_KEY }}
+          BLS_API_KEY: ${{ secrets.BLS_API_KEY }}
+          BEA_API_KEY: ${{ secrets.BEA_API_KEY }}
+      - name: Push updated DB
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Tools/volusia_data/volusia.db
+          git diff --cached --quiet && git commit -m "refresh: update volusia.db" || echo "no changes"
+          git push
+        working-directory: .
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: volusia-db
+          path: Tools/volusia_data/volusia.db
