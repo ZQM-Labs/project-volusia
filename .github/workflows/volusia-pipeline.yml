@@ -1,0 +1,23 @@
+name: Volusia Data Pipeline
+on:
+  schedule:
+    - cron: "0 6,18 * * *"
+  workflow_dispatch:
+  push:
+    paths:
+      - Tools/volusia_data/**
+      - .github/workflows/volusia-pipeline.yml
+jobs:
+  refresh:
+    runs-on: windows-latest
+    env:
+      CENSUS_API_KEY: ${{ secrets.CENSUS_API_KEY }}
+      BLS_API_KEY: ${{ secrets.BLS_API_KEY }}
+      BEA_API_KEY: ${{ secrets.BEA_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install requests
+      - run: python Tools/volusia_data/refresh_v2.py
