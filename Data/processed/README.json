@@ -1,0 +1,13 @@
+{
+  "name": "Volusia County Open Data — Processed Datasets",
+  "description": "Cleaned, transformed, and standardized datasets ready for analysis and reporting.",
+  "source": "Derived from raw/ data via refresh_v2.py pipeline",
+  "accessed": "2026-09-03",
+  "license": "Public domain / U.S. government",
+  "transformations": [
+    "Missing values handled per source documentation",
+    "Outlier detection applied",
+    "Standardized column names and units",
+    "Volusia County rows extracted (FIPS 12127)"
+  ]
+}

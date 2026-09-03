@@ -1,0 +1,8 @@
+# Project Volusia — local secrets and generated files
+.env
+*.pyc
+__pycache__/
+volusia_data/__pycache__/
+*.db-journal
+.DS_Store
+Thumbs.db

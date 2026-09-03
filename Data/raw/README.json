@@ -1,0 +1,8 @@
+{
+  "name": "Volusia County Open Data — Raw Datasets",
+  "description": "Raw downloaded data from public sources. Stored in original format with source metadata.",
+  "source": "Census PEP, NOAA NCEI, BLS QCEW, BEA Regional",
+  "accessed": "2026-09-03",
+  "license": "Public domain / U.S. government",
+  "note": "Files in this directory are the unmodified downloads from external sources."
+}

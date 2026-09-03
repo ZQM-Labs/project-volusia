@@ -1,0 +1,227 @@
+openapi: 3.0.3
+info:
+  title: Project Volusia — Contribution & Data API
+  description: |
+    The machine-readable interface for querying Volusia County open data
+    and submitting contributions to the Project Volusia knowledge system.
+
+    Two main surfaces:
+    1. **Data API** — read-only access to published indicators, datasets, and health
+    2. **Contribution API** — submit new data, analysis, tools, maps, and community knowledge
+
+    Full documentation: see AGENTIC_CONTRIBUTION_STRATEGY.md
+  version: "2026-09-03"
+  contact:
+    name: Project Volusia Community Liaison
+    email: community@project-volusia.org
+  license:
+    name: MIT
+
+servers:
+  - url: https://api.project-volusia.org/api/v1
+    description: Production
+  - url: http://localhost:8789/api/v1
+    description: Local development
+
+tags:
+  - name: Data
+    description: Read-only access to published indicators and datasets
+  - name: Health
+    description: System health and status
+  - name: Contributions
+    description: Submit new contributions (requires API key for write operations)
+
+paths:
+  /indicators:
+    get:
+      tags: [Data]
+      summary: List all published indicators
+      description: Returns all verified indicators for Volusia County
+      responses:
+        "200":
+          description: List of indicators
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                  indicators:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Indicator"
+
+  /indicators/{name}:
+    get:
+      tags: [Data]
+      summary: Get a specific indicator by name
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Indicator details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Indicator"
+        "404":
+          description: Indicator not found
+
+  /datasets:
+    get:
+      tags: [Data]
+      summary: List all datasets
+      responses:
+        "200":
+          description: List of datasets
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                  datasets:
+                    type: array
+                    items:
+                      type: object
+
+  /health:
+    get:
+      tags: [Health]
+      summary: System health check
+      description: Returns database status, indicator count, and overall health
+      responses:
+        "200":
+          description: Health status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [healthy, degraded]
+                  db_exists:
+                    type: boolean
+                  indicator_count:
+                    type: integer
+
+  /contributions:
+    post:
+      tags: [Contributions]
+      summary: Submit a new contribution
+      description: |
+        Submit a new contribution to the knowledge system. Requires a valid API key.
+        The contribution type determines which pathway it flows through.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContributionSubmission"
+      responses:
+        "201":
+          description: Contribution accepted for review
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  submission_id:
+                    type: string
+                  status:
+                    type: string
+                    enum: [queued, under_review, accepted, returned, rejected]
+                  estimated_review_by:
+                    type: string
+                    format: date-time
+        "400":
+          description: Validation error
+        "401":
+          description: Missing or invalid API key
+        "429":
+          description: Rate limit exceeded
+
+  /contributions/{submission_id}:
+    get:
+      tags: [Contributions]
+      summary: Get contribution status
+      parameters:
+        - name: submission_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Contribution details and review status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  submission_id:
+                    type: string
+                  status:
+                    type: string
+                  submitted_at:
+                    type: string
+                    format: date-time
+                  decision:
+                    type: string
+                  reviewer:
+                    type: string
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+
+  schemas:
+    Indicator:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        value:
+          type: string
+        unit:
+          type: string
+        category:
+          type: string
+        source:
+          type: string
+        source_url:
+          type: string
+        vintage:
+          type: string
+        fetched_at:
+          type: string
+          format: date-time
+        description:
+          type: string
+
+    ContributionSubmission:
+      type: object
+      required: [contribution_type, content]
+      properties:
+        contribution_type:
+          type: string
+          enum: [data_source, analysis, tool, map, report, community, social_media, educational, direct]
+        content:
+          type: object
+          description: The contribution payload (structure varies by type)
+        idempotency_key:
+          type: string
+          description: Optional key for safe retry
