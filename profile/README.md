@@ -1,32 +1,36 @@
 # ZQM Labs
 
-**Windows endpoint attestation & forensic tooling.**
+**Research & development arm of Project Volusia** — open-data infrastructure,
+open-source intelligence, and AI-council systems for Volusia County, Florida.
+Strategic focus: Q4 2026–2027.
 
-We build open, auditable tooling that turns "trust me, the endpoint is clean" into **cryptographic, signed evidence** — detached-CMS seals over SHA256-anchored manifests, independently verifiable by a second method. No SaaS, no cloud lock-in, no telemetry.
-
-## Repositories
+## Flagship
 
 | Repo | What it is |
 |------|-----------|
-| [zqm-attestation-toolkit](https://github.com/ZQM-Labs/zqm-attestation-toolkit) | CMS-signed, tamper-evident machine-health & AI-agent integrity reports (TPM / BitLocker / DFIR). The core suite. |
-| [awesome-windows-attestation](https://github.com/ZQM-Labs/awesome-windows-attestation) | Curated list of the Windows attestation, TPM/CMS-signing, DFIR & post-quantum readiness ecosystem. |
-| [pqc-readiness-toolkit](https://github.com/ZQM-Labs/pqc-readiness-toolkit) | NIST / ETSI / CNSA 2.0 post-quantum readiness for Windows fleets. |
-| [zqm-shield](https://github.com/ZQM-Labs/zqm-shield) | Lightweight Windows endpoint security helpers. |
-| [zqm-security-policy](https://github.com/ZQM-Labs/zqm-security-policy) | Baseline Windows endpoint posture rules. |
-| [zqm-public-tools](https://github.com/ZQM-Labs/zqm-public-tools) | Sanitized PowerShell helpers for Windows attestation. |
-| [zqm-attestation-briefs](https://github.com/ZQM-Labs/zqm-attestation-briefs) | Buyer-facing methodology & sample outputs. |
+| [project-volusia](https://github.com/ZQM-Labs/project-volusia) | Project Volusia — public data portal & intelligence platform: open-data pipeline (Census / BLS / BEA / NOAA / QCEW), FastAPI portal with SLA + freshness tracking, contribution API, charter & governance corpus. Python. |
+
+## Capabilities
+
+- **Open-data pipeline & portal** — real, machine-readable Volusia County indicators (FIPS 12127)
+- **Contribution system** — multi-pathway knowledge intake (community, schools, tools, data sources)
+- **Attestation & forensic tooling** — CMS-signed, tamper-evident machine-health & AI-agent integrity reports (TPM / BitLocker / DFIR)
+- **AI-council & intelligence systems** — multi-agent deliberation for research and decisions
 
 ## What we do
 
-- **Forensic attestation** — repeatable, CMS-signed evidence a Windows system is in the state it claims.
-- **Tamper-evident integrity** — for machine-health *and* AI-agent output, via detached CMS over SHA256 manifests.
-- **Supply-chain & post-quantum readiness** — map controls (NIST/ETSI/CNSA 2.0) to practical Windows checks.
+- Turn public data into **governed, reproducible indicators** — not dashboards nobody reads
+- Make "trust me, the endpoint is clean" into **cryptographic, signed evidence** (secondary workstream)
+- Run an **auditable contribution system** where human and agent inputs are logged, reviewed, and credited
 
 ## Licensing & procurement
 
-All tools are **MIT** (or **Apache-2.0** for PQC) licensed for use. **Commercial procurement** — paid attestation deliverables, bespoke sealing/verification integration, and support tiers — is available per repo.
+Open tools are **MIT** (some attestation/PQC work is Apache-2.0). Commercial
+procurement — paid deliverables, bespoke integration, support tiers — is
+handled through [ZQM-Computing](https://github.com/ZQM-Computing).
 
-- 📧 Contact / procurement: zqmcomputing@gmail.com
+- 📧 Contact: zqmcomputing@gmail.com
 - 💚 Sponsor: https://github.com/sponsors/ZQM-Computing
+- 🌐 Site: https://zqm-labs.github.io/ZQM-Labs/
 
 © 2026 ZQM Computing

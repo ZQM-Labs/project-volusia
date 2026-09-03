@@ -43,6 +43,7 @@ Contact: Alex Zelenski — zqmcomputing@gmail.com
 - [x] Publish `COMMERCE_RELIABILITY_PUBLIC.md` (public-facing standards reference).
 - [x] Initialize `CONTRIBUTION_LOG.md` with Phase 0 retroactive entries.
 - [x] Publish `COLLABORATION_CONVENTIONS.md` (multi-writer protocol: TTL claims, atomic writes, git hygiene for the shared drive).
+- [x] Publish `ADR-005` GitHub profile structure; `profile/README.md` aligned to Project Volusia focus; honest badges in root README.
 
 ### P2 — Commerce Reliability
 - [x] Publish `COMMERCE_RESEARCH_RELIABILITY.md` standards doc (internal charter; public extract `COMMERCE_RELIABILITY_PUBLIC.md` published 2026-09-03).

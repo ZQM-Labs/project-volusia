@@ -17,6 +17,7 @@ An ADR captures a significant architectural decision made in this project, inclu
 | 2 | Adopt ruff for linting and formatting | Accepted | 2026-08-08 |
 | 3 | Enforce branch protection on public repos | Accepted | 2026-08-08 |
 | 4 | Standardize repository metadata and topics | Accepted | 2026-08-08 |
+| 5 | GitHub profile structure & canonical public surfaces | Accepted | 2026-09-03 |
 
 ## Creating a New ADR
 

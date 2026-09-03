@@ -113,6 +113,27 @@ decisions made, and stakeholder signals surfaced.
    owner; recommended in §5 of the conventions doc).
 3. Decide whether `volusia.db` moves local/Postgres (WAL then possible).
 
+### 2026-09-03 (Post-change — GitHub Profile Alignment)
+
+**Decision (ADR-005):** ZQM-Labs = R&D arm of Project Volusia, canonical
+public repo `project-volusia`; ZQM-Computing = services/IT arm, public repo
+`volusia-portal`. Attestation/forensics and AI-council are secondary
+workstreams behind the Project Volusia strategic focus.
+
+**What Shipped:**
+- `profile/README.md` rewritten to lead with Project Volusia.
+- Root `README.md`: replaced hardcoded green shields with live CI/pipeline
+  badges for `ZQM-Labs/project-volusia`.
+- `docs/adr-005-github-profile-structure.md` created and added to
+  `docs/ADR.md` index.
+
+**What's Left (owner action):**
+- Push `P1-014` + `P1-015` (`main` is 1–2 commits ahead of
+  `project-volusia/main`).
+- Org description / repo visibility / branch protection / pipeline Secrets on
+  the GitHub side (see ADR-005).
+- CI follow-ups: ruff config, real test suite, public scanner repo.
+
 ---
 
 Document owner: Project Volusia Ops / Communications Lead

@@ -1,11 +1,13 @@
 # ZQM Labs
 
 <p align="left">
-  <img src="https://github.com/ZQM-Computing/volusia-portal/actions/workflows/ci.yml/badge.svg" alt="CI" />
-  <img src="https://img.shields.io/badge/tests-passing-brightgreen" alt="Tests" />
-  <img src="https://img.shields.io/badge/ruff-passing-blue" alt="Ruff" />
-  <img src="https://img.shields.io/badge/mypy-passing-blue" alt="Mypy" />
+  <img src="https://github.com/ZQM-Labs/project-volusia/actions/workflows/ci.yml/badge.svg" alt="CI" />
+  <img src="https://github.com/ZQM-Labs/project-volusia/actions/workflows/volusia-pipeline.yml/badge.svg" alt="Data pipeline" />
 </p>
+
+> Status note: badges reflect live CI state (per ADR-005). Static "passing"
+> shields were removed because they made claims this repository does not yet
+> prove.
 
 ## Strategic Focus: Project Volusia
 

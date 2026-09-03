@@ -36,6 +36,7 @@ Each entry has:
 ---
 
 | 2026-09-03 | ZQM Labs | tool | COLLABORATION_CONVENTIONS.md v1.0 (multi-writer protocol), Tools/collab/ claim.py + atomic_write.py, .gitignore hygiene, untracked generated artifacts | accepted | Alex Zelenski | Reduces read-modify-write collisions on shared drive; git documented as the structural fix. |
+| 2026-09-03 | ZQM Labs | docs | ADR-005 GitHub profile structure; profile/README.md aligned to Project Volusia; honest badges in root README | accepted | Alex Zelenski | Live GitHub audit (ZQM-Labs + ZQM-Computing) confirmed single canonical repos; attestation repositioned as secondary workstream. |
 
 ## 4. AGENT CONTRIBUTIONS
 
