@@ -275,6 +275,28 @@ After 1008aa1 (writer's docs/portal sweep):
 - New owner item: GitHub reports 10 Dependabot vulnerabilities on
   ZQM-Labs/ZQM-Labs default branch (1 critical, 4 high, 2 moderate, 3 low).
 
+### P1-023 — integrations: .env wiring, dependabot pip, contribution-API test suite (2026-09-03)
+
+- `.env` was inert: `config.py` read `os.environ` only, so the writer's
+  rotated keys (materialized in P1-022) never reached anything. Added a
+  zero-dependency `_load_dotenv()` to `config.py` (repo root + `Tools/`,
+  real environment wins via `setdefault`) and made `run_full_refresh.py`
+  import `volusia_data.config` **before** `refresh_v2` so `.env` reaches
+  the pipeline in every import order.
+- `dependabot.yml` watched only `github-actions` — added the `pip`
+  ecosystem so `pyproject.toml` + the three requirements files get
+  dependency PRs.
+- New `tests/test_contribution.py`: 18 tests, fully isolated from the real
+  `volusia.db` (tmp-dir `VOLUSIA_DB_PATH`, env-key monkeypatching). First
+  run caught a **production-bound defect**: the writer's in-flight
+  `contribution_api.py` rewrite returns `(primary, fallback)` tuples from
+  `CONTRIBUTION_ROUTING` but still binds them raw → `sqlite3.ProgrammingError`
+  on every submit of a known contribution type (7/18 failed before the shim).
+- Worktree-only surgical fixes, **not committed by me** (writer absorbs,
+  per the `portal_app.py` precedent): tuple-tolerant routing shim in
+  `contribution_api.py`, script-mode-guarded flush in `portal_app.py`.
+  Validated: 18/18 pass, `ruff check` clean on all committed paths.
+
 ---
 
 Related: PROJECT_VOLUSIA_GOV.md, CONTRIBUTION_LOG.md

@@ -10,6 +10,7 @@ from pathlib import Path
 # Ensure the volusia_data package is importable
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import config  # noqa: F401 — loads .env into os.environ before refresh_v2 reads keys
 from refresh_v2 import main
 
 if __name__ == "__main__":

@@ -4,3 +4,18 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+  # P1-023: pip coverage — pyproject.toml [project] + requirements-dev.txt
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+  # Tools/requirements.txt — pipeline + portal runtime deps
+  - package-ecosystem: "pip"
+    directory: "/Tools"
+    schedule:
+      interval: "weekly"
+  # contribution-api/requirements.txt — canonical FastAPI service
+  - package-ecosystem: "pip"
+    directory: "/contribution-api"
+    schedule:
+      interval: "weekly"

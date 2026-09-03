@@ -3,8 +3,9 @@
 Project Volusia — Central Data Configuration
 Single source of truth for all fetchers, portal, and pipeline.
 
-Reads API keys from environment variables.
-Never commit real keys to source control.
+Reads API keys from environment variables, optionally populated from a
+repo-root `.env` file (never commit real keys to source control; real
+environment variables always take precedence over `.env` values).
 """
 
 import os
@@ -16,7 +17,51 @@ TOOLS_DIR = ROOT / "Tools"
 DATA_DIR = ROOT / "Data"
 CONTRIBUTION_DIR = ROOT / "CONTRIBUTION"
 
-# API keys — read from env, NEVER hardcode
+
+def _load_dotenv(path: Path | None = None) -> dict:
+    """Zero-dependency .env loader (no python-dotenv required).
+
+    Parses KEY=VALUE lines (tolerates an optional ``export `` prefix,
+    ``#`` comments, and single/double-quoted values) and applies them to
+    ``os.environ``.
+
+    Precedence: variables already present in the real environment always
+    win, so CI secrets and shell exports override `.env` values.
+    """
+    env_file = path or (ROOT / ".env")
+    loaded: dict = {}
+    if not env_file.is_file():
+        return loaded
+    try:
+        text = env_file.read_text(encoding="utf-8")
+    except OSError:
+        return loaded
+    for raw in text.splitlines():
+        line = raw.strip()
+        if line.startswith("export "):
+            line = line[len("export ") :].lstrip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        key = key.strip()
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in ("'", '"'):
+            value = value[1:-1]
+        if not key or any(ch.isspace() for ch in key):
+            continue
+        if key in os.environ:
+            continue  # real environment wins
+        os.environ[key] = value
+        loaded[key] = value
+    return loaded
+
+
+# Populate os.environ from .env (if present) BEFORE reading configuration,
+# so every consumer (pipeline, portal, contribution API) sees the same
+# resolved values.
+_load_dotenv()
+
+# API keys — read from env (or .env), NEVER hardcode
 CENSUS_API_KEY = os.environ.get("CENSUS_API_KEY", "")
 BLS_API_KEY = os.environ.get("BLS_API_KEY", "")
 BEA_API_KEY = os.environ.get("BEA_API_KEY", "")
