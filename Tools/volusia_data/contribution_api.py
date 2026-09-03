@@ -4,8 +4,9 @@ Project Volusia — Contribution Submission API
 Accepts contributions from web forms, SMS, and agents.
 Routes them to the appropriate CGB member for review.
 
-Run: python contribution_api.py
+Run: python Tools/volusia_data/contribution_api.py
 """
+
 import os
 import sys
 import json
@@ -22,9 +23,13 @@ TOOLS_DIR = Path(__file__).resolve().parents[1]
 if str(TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(TOOLS_DIR))
 
+from volusia_data.config import (
+    DB_PATH, CONTRIBUTION_PORT,
+    CONTRIBUTION_EMAIL, CGB_ADMIN_EMAIL,
+)
+
 app = FastAPI(title="Project Volusia — Contribution API")
 
-DB_PATH = Path(os.environ.get("VOLUSIA_DB_PATH", str(Path(__file__).resolve().parent / "volusia.db")))
 # ── Optional API-key enforcement ────────────────────────────────────────────
 # Set VOLUSIA_API_KEYS (comma-separated) to require a key. Without it,
 # anonymous submissions are allowed — required by the community web form
@@ -32,7 +37,23 @@ DB_PATH = Path(os.environ.get("VOLUSIA_DB_PATH", str(Path(__file__).resolve().pa
 ALLOWED_API_KEYS = {k.strip() for k in os.environ.get("VOLUSIA_API_KEYS", "").split(",") if k.strip()}
 
 # Valid contribution types (aligned with openapi.yaml)
-VALID_CONTRIBUTION_TYPES = ["data_source", "analysis", "tool", "map", "report", "community", "social_media", "educational", "direct"]
+VALID_CONTRIBUTION_TYPES = [
+    "data_source", "analysis", "tool", "map", "report",
+    "community", "social_media", "educational", "direct",
+]
+
+# Contribution routing by type
+CONTRIBUTION_ROUTING = {
+    "data_source": "Data Steward",
+    "analysis": "Methodologist",
+    "tool": "Tool Owner",
+    "map": "GIS Lead",
+    "report": "Report Lead",
+    "community": "Community Liaison",
+    "social_media": "Community Liaison",
+    "educational": "Community Liaison",
+    "direct": "Community Liaison",
+}
 
 
 def add_business_days(start: datetime, days: int) -> datetime:
@@ -53,7 +74,6 @@ def check_api_key(request: Request):
     if cred and cred not in ALLOWED_API_KEYS:
         raise HTTPException(status_code=401, detail="Invalid API key")
     return cred or None
-# Keys are read from the VOLUSIA_API_KEYS env var (see ALLOWED_API_KEYS above).
 
 
 def _db():
@@ -80,12 +100,17 @@ async def submit_contribution(request: Request):
     check_api_key(request)
 
     contribution_type = body.get("contribution_type", "direct")
-    content = body.get("content", body)  # accept full body when no content wrapper (may be None)
+    content = body.get("content", body)  # accept full body when no content wrapper
     idempotency_key = body.get("idempotency_key")
+    author_email = body.get("author_email", "")
+    author_name = body.get("author_name", "")
 
     # Validate contribution type
     if contribution_type not in VALID_CONTRIBUTION_TYPES:
-        raise HTTPException(status_code=400, detail=f"Invalid contribution_type. Must be one of: {VALID_CONTRIBUTION_TYPES}")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid contribution_type. Must be one of: {VALID_CONTRIBUTION_TYPES}",
+        )
 
     # Validate content is present and meaningful
     empty = content is None or (
@@ -99,6 +124,9 @@ async def submit_contribution(request: Request):
     # Generate submission ID
     ts = datetime.now().strftime("%Y%m%d%H%M%S%f")
     submission_id = f"SUB-{contribution_type.upper()}-{ts}"
+
+    # Determine routing
+    reviewer = CONTRIBUTION_ROUTING.get(contribution_type, "Community Liaison")
 
     # Store submission
     conn = _db()
@@ -115,6 +143,8 @@ async def submit_contribution(request: Request):
                 acknowledged_at TEXT,
                 decision TEXT,
                 reviewer TEXT,
+                author_email TEXT,
+                author_name TEXT,
                 idempotency_key TEXT
             )
         """)
@@ -135,9 +165,9 @@ async def submit_contribution(request: Request):
 
         now = _now()
         conn.execute("""
-            INSERT INTO submissions (submission_id, contribution_type, content, status, submitted_at, acknowledged_at, idempotency_key)
-            VALUES (?, ?, ?, 'queued', ?, ?, ?)
-        """, (submission_id, contribution_type, json.dumps(content), now, now, idempotency_key))
+            INSERT INTO submissions (submission_id, contribution_type, content, status, submitted_at, acknowledged_at, reviewer, author_email, author_name, idempotency_key)
+            VALUES (?, ?, ?, 'queued', ?, ?, ?, ?, ?, ?)
+        """, (submission_id, contribution_type, json.dumps(content), now, now, reviewer, author_email, author_name, idempotency_key))
         conn.commit()
 
     except sqlite3.IntegrityError as e:
@@ -153,7 +183,8 @@ async def submit_contribution(request: Request):
         "submitted_at": now,
         "acknowledged_at": now,
         "estimated_review_by": review_by.isoformat(),
-        "anonymous": True,
+        "reviewer": reviewer,
+        "anonymous": not author_email,
         "message": "Contribution received. You will receive an update within 5 business days.",
     })
 
@@ -178,18 +209,22 @@ async def get_contribution(submission_id: str):
         "acknowledged_at": row["acknowledged_at"],
         "decision": row["decision"],
         "reviewer": row["reviewer"],
+        "author_email": row["author_email"],
+        "author_name": row["author_name"],
     }
 
 
 @app.get("/api/v1/contributions")
-async def list_contributions(limit: int = 50, offset: int = 0):
+async def list_contributions(limit: int = 50, offset: int = 0, status: str = None):
     """List recent submissions (for CGB triage)."""
     conn = _db()
     try:
-        rows = conn.execute(
-            "SELECT * FROM submissions ORDER BY submitted_at DESC LIMIT ? OFFSET ?",
-            (limit, offset)
-        ).fetchall()
+        query = "SELECT * FROM submissions ORDER BY submitted_at DESC LIMIT ? OFFSET ?"
+        params = [limit, offset]
+        if status:
+            query = "SELECT * FROM submissions WHERE status = ? ORDER BY submitted_at DESC LIMIT ? OFFSET ?"
+            params = [status, limit, offset]
+        rows = conn.execute(query, params).fetchall()
     finally:
         conn.close()
 
@@ -201,9 +236,53 @@ async def list_contributions(limit: int = 50, offset: int = 0):
                 "contribution_type": r["contribution_type"],
                 "status": r["status"],
                 "submitted_at": r["submitted_at"],
+                "reviewer": r["reviewer"],
+                "author_name": r["author_name"],
             }
             for r in rows
-        ]
+        ],
+    }
+
+
+@app.patch("/api/v1/contributions/{submission_id}")
+async def update_contribution(submission_id: str, request: Request):
+    """Update a submission's status (CGB triage use)."""
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON body")
+
+    new_status = body.get("status")
+    decision = body.get("decision", "")
+    reviewer = body.get("reviewer", "")
+
+    if new_status not in ["queued", "under_review", "approved", "rejected", "needs_revision"]:
+        raise HTTPException(status_code=400, detail=f"Invalid status: {new_status}")
+
+    conn = _db()
+    try:
+        row = conn.execute("SELECT * FROM submissions WHERE submission_id = ?", (submission_id,)).fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Submission not found")
+
+        now = _now()
+        conn.execute("""
+            UPDATE submissions SET status = ?, decision = ?, reviewer = ?, acknowledged_at = ?
+            WHERE submission_id = ?
+        """, (new_status, decision, reviewer or row["reviewer"], now, submission_id))
+        conn.commit()
+
+        updated = conn.execute("SELECT * FROM submissions WHERE submission_id = ?", (submission_id,)).fetchone()
+    finally:
+        conn.close()
+
+    return {
+        "submission_id": updated["submission_id"],
+        "status": updated["status"],
+        "decision": updated["decision"],
+        "reviewer": updated["reviewer"],
+        "acknowledged_at": updated["acknowledged_at"],
+        "message": "Submission updated",
     }
 
 
@@ -217,12 +296,14 @@ async def root():
     """Service metadata and endpoint index."""
     return {
         "name": "Project Volusia — Contribution API",
-        "version": "2026-09-03",
+        "version": "1.0.0",
         "anonymous_submissions": not bool(ALLOWED_API_KEYS),
+        "contribution_routing": CONTRIBUTION_ROUTING,
         "endpoints": {
             "submit": "POST /api/v1/contributions",
             "status": "GET /api/v1/contributions/{submission_id}",
             "list": "GET /api/v1/contributions",
+            "update": "PATCH /api/v1/contributions/{submission_id}",
             "health": "GET /api/v1/health",
             "swagger": "/docs",
         },
@@ -232,5 +313,5 @@ async def root():
 
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.environ.get("VOLUSIA_CONTRIBUTION_PORT", "8790"))
-    uvicorn.run(app, host="127.0.0.1", port=port)
+    print(f"Starting Contribution API on port {CONTRIBUTION_PORT}")
+    uvicorn.run(app, host="127.0.0.1", port=CONTRIBUTION_PORT)

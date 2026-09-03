@@ -1,0 +1,14 @@
+id,name,value,unit,category,source,source_url,vintage,fetched_at,description
+1,avg_max_temp_2024,280.6,tenths C,Climate,NOAA NCEI,https://www.ncei.noaa.gov/access/services/data/v1,2024,2026-09-03T13:34:26.530702+00:00,NOAA daily avg TMAX for Daytona Beach
+2,avg_min_temp_2024,191.3,tenths C,Climate,NOAA NCEI,https://www.ncei.noaa.gov/access/services/data/v1,2024,2026-09-03T13:34:26.535220+00:00,NOAA daily avg TMIN for Daytona Beach
+3,total_precip_2024,10280,tenths mm,Climate,NOAA NCEI,https://www.ncei.noaa.gov/access/services/data/v1,2024,2026-09-03T13:34:26.539227+00:00,NOAA total PRCP for Daytona Beach
+17,total_population_pep_2022,580529,persons,Demographics,Census PEP,https://www2.census.gov/programs-surveys/popest/datasets/2020-2025/counties/totals/co-est2025-alldata.csv,2022,2026-09-03T13:34:25.453116+00:00,"Census PEP county population estimate, July 1 2022"
+16,total_population_pep_2023,591936,persons,Demographics,Census PEP,https://www2.census.gov/programs-surveys/popest/datasets/2020-2025/counties/totals/co-est2025-alldata.csv,2023,2026-09-03T13:34:25.447111+00:00,"Census PEP county population estimate, July 1 2023"
+15,total_population_pep_2024,601107,persons,Demographics,Census PEP,https://www2.census.gov/programs-surveys/popest/datasets/2020-2025/counties/totals/co-est2025-alldata.csv,2024,2026-09-03T13:34:25.390451+00:00,"Census PEP county population estimate, July 1 2024"
+7,avg_weekly_wage_qcew,1041,USD,Economy,BLS QCEW,https://data.bls.gov/cew/data/files/2024/csv/2024_annual_singlefile.zip,2024,2026-09-03T13:35:04.570979+00:00,BLS QCEW annual avg weekly wage
+6,employment_qcew,189265,employees,Economy,BLS QCEW,https://data.bls.gov/cew/data/files/2024/csv/2024_annual_singlefile.zip,2024,2026-09-03T13:35:04.564975+00:00,BLS QCEW annual avg employment
+5,establishments_qcew,16756,establishments,Economy,BLS QCEW,https://data.bls.gov/cew/data/files/2024/csv/2024_annual_singlefile.zip,2024,2026-09-03T13:35:04.559792+00:00,BLS QCEW annual avg establishments
+34,per_capita_income,59259.0,USD,Economy,BEA Regional,https://www.bea.gov/data/income-saving/local-area-personal-income,2024,2026-09-03T13:34:29.680250+00:00,"Per capita personal income for Volusia County, 2024"
+32,personal_income_total,35719516.0,thousands USD,Economy,BEA Regional,https://www.bea.gov/data/income-saving/local-area-personal-income,2024,2026-09-03T13:34:28.280754+00:00,"Total personal income (thousands) for Volusia County, 2024"
+33,population_bea,602772.0,persons,Economy,BEA Regional,https://www.bea.gov/data/income-saving/local-area-personal-income,2024,2026-09-03T13:34:28.949808+00:00,"Population for Volusia County, 2024"
+4,unemployment_rate_bls,5.3,percent,Economy,BLS LAUS,https://www.bls.gov/lau/,July 2026,2026-09-03T13:34:27.274568+00:00,BLS LAUS unemployment rate for Volusia County (July 2026)

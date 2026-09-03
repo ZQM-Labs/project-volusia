@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Volusia — Contribute</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }
+        h1 { color: #1a5276; margin-bottom: 10px; }
+        .subtitle { color: #666; margin-bottom: 30px; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-weight: 600; margin-bottom: 5px; }
+        input, textarea, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px; }
+        textarea { min-height: 100px; resize: vertical; }
+        button { background: #1a5276; color: white; padding: 12px 30px; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; }
+        button:hover { background: #154360; }
+        .info { background: #eaf2f8; padding: 15px; border-radius: 4px; margin-bottom: 20px; }
+        .pathway-info { display: none; }
+        .pathway-info.active { display: block; }
+    </style>
+</head>
+<body>
+    <h1>Contribute to Project Volusia</h1>
+    <p class="subtitle">Share your knowledge, data, or observations about Volusia County.</p>
+
+    <div class="info">
+        <strong>Privacy:</strong> Your submission will be reviewed before publication. You can submit anonymously or with attribution — your choice.
+    </div>
+
+    <form id="contributionForm">
+        <div class="form-group">
+            <label for="pathway">What are you contributing?</label>
+            <select id="pathway" name="contribution_type" required>
+                <option value="">Select a category...</option>
+                <option value="community">Community Knowledge (observation, local knowledge)</option>
+                <option value="data_source">Data Source (new public data source)</option>
+                <option value="analysis">Analysis (research or data analysis)</option>
+                <option value="tool">Tool (software or script)</option>
+                <option value="map">Map Layer (geospatial data)</option>
+                <option value="social_media">Social Media Intelligence</option>
+                <option value="educational">Educational Project (school/college)</option>
+                <option value="direct">Direct Contribution (anything else)</option>
+            </select>
+        </div>
+
+        <div id="community-fields" class="pathway-info">
+            <div class="form-group">
+                <label>What do you know or observed?</label>
+                <textarea name="what_i_know" placeholder="Be specific. 'The restaurant at 123 Main St closed in March 2026.'"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Where?</label>
+                <input type="text" name="where" placeholder="Address, neighborhood, or area">
+            </div>
+            <div class="form-group">
+                <label>When?</label>
+                <input type="text" name="when" placeholder="Date or time period">
+            </div>
+            <div class="form-group">
+                <label>Why do you believe this is accurate?</label>
+                <input type="text" name="why_believe_accurate" placeholder="Personal experience, documentation, etc.">
+            </div>
+        </div>
+
+        <div id="direct-fields" class="pathway-info">
+            <div class="form-group">
+                <label>What do you want to contribute?</label>
+                <textarea name="content" placeholder="Describe your contribution..."></textarea>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Your name (optional)</label>
+            <input type="text" name="contributor_name" placeholder="Leave blank for anonymous">
+        </div>
+
+        <div class="form-group">
+            <label>Contact email (optional)</label>
+            <input type="email" name="contact_email" placeholder="For follow-up if needed">
+        </div>
+
+        <button type="submit">Submit Contribution</button>
+    </form>
+
+    <div id="result" style="margin-top:20px; display:none; padding:15px; border-radius:4px;"></div>
+
+    <script>
+        document.getElementById('pathway').addEventListener('change', function() {
+            document.querySelectorAll('.pathway-info').forEach(el => el.classList.remove('active'));
+            const selected = this.value;
+            if (selected === 'community') {
+                document.getElementById('community-fields').classList.add('active');
+            } else if (selected === 'direct') {
+                document.getElementById('direct-fields').classList.add('active');
+            }
+        });
+
+        document.getElementById('contributionForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = {
+                contribution_type: formData.get('contribution_type'),
+                content: {}
+            };
+
+            for (let [key, value] of formData.entries()) {
+                if (key !== 'contribution_type' && value) {
+                    data.content[key] = value;
+                }
+            }
+
+            try {
+                const resp = await fetch('http://localhost:8790/api/v1/contributions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await resp.json();
+                const resultDiv = document.getElementById('result');
+                resultDiv.style.display = 'block';
+                resultDiv.style.background = resp.ok ? '#d4edda' : '#f8d7da';
+                resultDiv.innerHTML = `<strong>${resp.ok ? 'Success!' : 'Error'}</strong><br>${result.message || result.detail}<br><small>ID: ${result.submission_id || 'N/A'}</small>`;
+            } catch (err) {
+                document.getElementById('result').style.display = 'block';
+                document.getElementById('result').style.background = '#f8d7da';
+                document.getElementById('result').innerHTML = `<strong>Error:</strong> Could not connect to server. Make sure the contribution API is running on port 8790.`;
+            }
+        });
+    </script>
+</body>
+</html>
