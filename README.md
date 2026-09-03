@@ -1,4 +1,6 @@
 # ZQM Labs
+[![Release](https://github.com/ZQM-Labs/ZQM-Labs/actions/workflows/release.yml/badge.svg)](https://github.com/ZQM-Labs/ZQM-Labs/actions/workflows/release.yml)
+
 
 [![CI](https://github.com/ZQM-Labs/ZQM-Labs/actions/workflows/ci.yml/badge.svg)](https://github.com/ZQM-Labs/ZQM-Labs/actions/workflows/ci.yml) [![Tests](https://github.com/ZQM-Labs/ZQM-Labs/actions/workflows/tests.yml/badge.svg)](https://github.com/ZQM-Labs/ZQM-Labs/actions/workflows/tests.yml) [![Ruff](https://github.com/ZQM-Labs/ZQM-Labs/actions/workflows/ci.yml/badge.svg)](https://github.com/ZQM-Labs/ZQM-Labs/actions/workflows/ci.yml) [![mypy](https://github.com/ZQM-Labs/ZQM-Labs/actions/workflows/ci.yml/badge.svg)](https://github.com/ZQM-Labs/ZQM-Labs/actions/workflows/ci.yml)
 
