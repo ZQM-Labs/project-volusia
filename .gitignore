@@ -24,6 +24,8 @@ desktop.ini
 *.dll
 *.bat
 *.ps1
+# Exception: Project Volusia setup script
+!Tools/setup_scheduled_tasks.bat
 
 # Logs
 *.log
