@@ -30,7 +30,7 @@ from fastapi.responses import HTMLResponse
 
 # ------------------------------------------------------------------ config
 API_BASE_URL = os.environ.get(
-    "VOLUSIA_CONTRIBUTION_API", "http://127.0.0.1:8790"
+    "VOLUSIA_CONTRIBUTION_API", ""
 ).rstrip("/")
 STANDALONE_PORT = int(os.environ.get("VOLUSIA_CONTRIBUTE_PORT", "8791"))
 HTTP_TIMEOUT = 3.0  # seconds; keep the UI responsive before fallback
@@ -192,12 +192,14 @@ def _testclient():
 
 def _api_post(payload: dict) -> tuple[int, dict, str]:
     """Submit via HTTP; fall back to in-process app if unreachable.
-
+    
     Returns (status_code, body, via) where via is "http" or "local".
     """
+    # Use relative URL if API_BASE_URL is empty (same-origin)
+    url = f"{API_BASE_URL}/api/v1/contributions" if API_BASE_URL else "/api/v1/contributions"
     try:
         resp = requests.post(
-            f"{API_BASE_URL}/api/v1/contributions",
+            url,
             json=payload,
             timeout=HTTP_TIMEOUT,
         )
@@ -213,9 +215,10 @@ def _api_post(payload: dict) -> tuple[int, dict, str]:
 
 def _api_get(submission_id: str) -> tuple[int, dict, str]:
     """Fetch one submission via HTTP; same fallback contract as _api_post."""
+    url = f"{API_BASE_URL}/api/v1/contributions/{submission_id}" if API_BASE_URL else f"/api/v1/contributions/{submission_id}"
     try:
         resp = requests.get(
-            f"{API_BASE_URL}/api/v1/contributions/{submission_id}",
+            url,
             timeout=HTTP_TIMEOUT,
         )
         return resp.status_code, _safe_json(resp), "http"

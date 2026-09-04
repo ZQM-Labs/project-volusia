@@ -340,6 +340,13 @@ def contribute_page():
     return HTMLResponse("<html><body><h1>Contribute</h1><p>Contribution form loading...</p></body></html>")
 
 
+@app.get("/project-volusia", response_class=HTMLResponse)
+def project_volusia_redirect():
+    """Redirect /project-volusia to the main portal page."""
+    return HTMLResponse("""<html><head><meta http-equiv="refresh" content="0; url=/"></head>
+<body><p>Redirecting to <a href="/">Project Volusia Portal</a>...</p></body></html>""")
+
+
 @app.get("/api/indicators")
 def api_indicators():
     rows = _db_rows("SELECT * FROM indicators ORDER BY category, name")
@@ -360,6 +367,27 @@ def api_indicators():
 def _chart_response(fig):
     """Convert matplotlib fig to PNG Response."""
     import io
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png", dpi=100, bbox_inches="tight")
+    buf.seek(0)
+    plt.close(fig)
+    return Response(content=buf.read(), media_type="image/png")
+
+
+def _chart_no_data_response(message):
+    """Return a small placeholder PNG when no data is available."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    import io
+    
+    fig, ax = plt.subplots(figsize=(8, 4))
+    ax.text(0.5, 0.5, message, ha='center', va='center', fontsize=14, color='#64748b')
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+    ax.axis('off')
+    fig.tight_layout()
+    
     buf = io.BytesIO()
     fig.savefig(buf, format="png", dpi=100, bbox_inches="tight")
     buf.seek(0)
@@ -389,7 +417,7 @@ def chart_population_trend():
         pops.append(val)
 
     if not years:
-        return Response(content="No population data", media_type="text/plain")
+        return _chart_no_data_response("No population data available.\nRun refresh_v2.py to fetch data.")
 
     fig, ax = plt.subplots(figsize=(8, 4))
     ax.plot(years, pops, marker="o", color="#1e3a5f", linewidth=2)
@@ -428,7 +456,7 @@ def chart_employment_overview():
         values.append(val)
 
     if not labels:
-        return Response(content="No employment data", media_type="text/plain")
+        return _chart_no_data_response("No employment data available.\nRun refresh_v2.py to fetch data.")
 
     fig, ax = plt.subplots(figsize=(8, 4))
     colors = ["#1e3a5f", "#2b6cb0", "#63b3ed"]
@@ -465,7 +493,7 @@ def chart_climate_summary():
         values.append(val)
 
     if not labels:
-        return Response(content="No climate data", media_type="text/plain")
+        return _chart_no_data_response("No climate data available.\nRun refresh_v2.py to fetch data.")
 
     fig, ax = plt.subplots(figsize=(8, 4))
     colors = ["#c53030", "#dd6b20", "#38a169"]
@@ -629,6 +657,12 @@ if __name__ == "__main__":
     port = int(os.environ.get("VOLUSIA_PORTAL_PORT", "8789"))
     print(f"Starting Project Volusia Portal v2.0-coherent on http://{host}:{port}")
     print(f"Database: {DB_PATH}")
+
+    # Auto-initialize DB if it doesn't exist
+    if not DB_PATH.exists():
+        print("Database not found, initializing...")
+        init_db()
+
     if DB_PATH.exists():
         conn = sqlite3.connect(str(DB_PATH))
         count = conn.execute("SELECT COUNT(*) FROM indicators").fetchone()[0]
