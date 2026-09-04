@@ -26,6 +26,7 @@ if str(TOOLS_DIR) not in sys.path:
 from volusia_data.config import (
     DB_PATH, CONTRIBUTION_PORT,
     CONTRIBUTION_EMAIL, CGB_ADMIN_EMAIL,
+    validate_keys
 )
 
 app = FastAPI(title="Project Volusia — Contribution API")
@@ -42,17 +43,29 @@ VALID_CONTRIBUTION_TYPES = [
     "community", "social_media", "educational", "direct",
 ]
 
-# Contribution routing by type
+# ── Contribution routing: PRIMARY + FALLBACK nodes ─────────────────────
+# Types that require HUMAN judgment (community-facing) have humans as
+# primary, with Governance Chair as fallback.
+# Types that require CAPABILITY (data, analysis, tools, GIS) route to
+# ZQM-Nodes by capability, with human reviewers as fallback.
+#
+# Format: (primary, fallback)
 CONTRIBUTION_ROUTING = {
-    "data_source": "Data Steward",
-    "analysis": "Methodologist",
-    "tool": "Tool Owner",
-    "map": "GIS Lead",
-    "report": "Report Lead",
-    "community": "Community Liaison",
-    "social_media": "Community Liaison",
-    "educational": "Community Liaison",
-    "direct": "Community Liaison",
+    # Data source: Node-3 has data pipeline capability
+    "data_source":  ("Node-3 (Data Pipeline)", "Methodologist"),
+    # Analysis: Node-2 has analytical capability
+    "analysis":     ("Node-2 (Analysis)", "Methodologist"),
+    # Tool: Node-5 has tool testing capability
+    "tool":         ("Node-5 (Tool Test)", "Tool Owner"),
+    # Map: Node-1 has GIS capability
+    "map":          ("Node-1 (GIS)", "GIS Lead"),
+    # Report: Report Lead (human)
+    "report":       ("Report Lead", "Community Liaison"),
+    # Community-facing: all route to Community Liaison with Governance Chair fallback
+    "community":    ("Community Liaison", "Governance Chair"),
+    "social_media": ("Community Liaison", "Governance Chair"),
+    "educational":  ("Community Liaison", "Governance Chair"),
+    "direct":       ("Community Liaison", "Governance Chair"),
 }
 
 
@@ -126,7 +139,16 @@ async def submit_contribution(request: Request):
     submission_id = f"SUB-{contribution_type.upper()}-{ts}"
 
     # Determine routing
+    # P1-023 shim (worktree-only, to be absorbed by the author): in-flight
+    # CONTRIBUTION_ROUTING values are (primary, fallback) tuples while every
+    # consumer below binds/returns a plain string. Coerce to the primary so
+    # submits cannot fail with "type 'tuple' is not supported" (caught by
+    # tests/test_contribution.py). Delete once routing values are strings.
     reviewer = CONTRIBUTION_ROUTING.get(contribution_type, "Community Liaison")
+    if isinstance(reviewer, tuple):
+        reviewer = reviewer[0] if reviewer and reviewer[0] else "Community Liaison"
+    elif not isinstance(reviewer, str):
+        reviewer = str(reviewer)
 
     # Store submission
     conn = _db()

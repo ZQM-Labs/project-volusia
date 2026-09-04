@@ -11,69 +11,37 @@ Run: python Tools/volusia_data/portal_app.py
 """
 
 import os
+import sys
 import sqlite3
 import csv
 import io
 import json
 from datetime import datetime, timezone
 from pathlib import Path
+
+# --- Force clean import (script mode only) ---
+# P1-023 fix: this used to run unconditionally at module level, deleting this
+# module's OWN sys.modules entry while it was still executing — so ANY import
+# of volusia_data.portal_app died with KeyError at importlib finalization
+# (script runs were unaffected because the module registers as "__main__").
+# Guarded to script mode to preserve the original flush intent.
+if __name__ == "__main__":
+    for _key in list(sys.modules.keys()):
+        if "volusia" in _key:
+            del sys.modules[_key]
+
 from fastapi import FastAPI, Response
 from fastapi.responses import HTMLResponse, StreamingResponse
 
-# Import central config
-import sys
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from volusia_data.config import (
-    DB_PATH, PORTAL_HOST, PORTAL_PORT,
-    EXTERNAL_SITE_URL, validate_keys
-)
-
 app = FastAPI(title="Project Volusia — Open Data Portal")
 
-# ── Coherence metadata ──────────────────────────────────────────────────────
-# Indicator groupings that represent the same real-world quantity from
-# different sources. When multiple indicators match a group, the portal
-# surfaces the disagreement instead of hiding it.
-COHERENCE_GROUPS = {
-    "population": {
-        "label": "Population",
-        "indicator_names": [
-            "total_population_pep_2024",
-            "total_population_pep_2023",
-            "total_population_pep_2022",
-            "total_population_acs",
-            "population_bea",
-        ],
-        "unit": "persons",
-        "note": "Different sources use different methodologies and vintages. "
-                "PEP = Census Population Estimates Program (official counts). "
-                "ACS = American Community Survey (survey-based). "
-                "BEA = Bureau of Economic Analysis (economic geography). "
-                "Treat as a range, not a single number.",
-    },
-    "income": {
-        "label": "Income",
-        "indicator_names": [
-            "per_capita_income",
-            "personal_income_total",
-        ],
-        "unit": "USD",
-        "note": "BEA personal income measures all income received by residents "
-                "(wages, benefits, investment income, government transfers). "
-                "Different from Census money income.",
-    },
-    "employment": {
-        "label": "Employment",
-        "indicator_names": [
-            "employment_qcew",
-            "unemployment_rate_bls",
-        ],
-        "unit": "mixed",
-        "note": "QCEW employment counts jobs at establishments. "
-                "BLS LAUS unemployment rate measures labor force status of residents. "
-                "These measure different things — don't divide one by the other.",
-    },
-}
+# DB path
+DB_PATH = Path(
+    os.environ.get(
+        "VOLUSIA_DB_PATH",
+        str(Path(__file__).resolve().parent / "volusia.db"),
+    )
+)
 
 CSS_STYLE = """
 <style>
@@ -137,13 +105,51 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
               margin-top: 0.5rem; }
 .key-status.ok { background: #dcfce7; color: #166534; }
 .key-status.missing { background: #fee2e2; color: #991b1b; }
-.key-status.missing::before { content: "!"; background: #ef4444; color: white;
-                              width: 1rem; height: 1rem; border-radius: 50%;
-                              display: inline-flex; align-items: center;
-                              justify-content: center; font-weight: bold;
-                              font-size: 0.7rem; }
 </style>
 """
+
+# ── Coherence groups ──────────────────────────────────────────────────
+COHERENCE_GROUPS = {
+    "population": {
+        "label": "Population",
+        "indicator_names": [
+            "total_population_pep_2024",
+            "total_population_pep_2023",
+            "total_population_pep_2022",
+            "total_population_acs",
+            "population_bea",
+        ],
+        "unit": "persons",
+        "note": (
+            "Different sources use different methodologies and vintages. "
+            "PEP = Census Population Estimates (official counts). "
+            "ACS = American Community Survey (survey-based, 5-year estimates). "
+            "BEA = Bureau of Economic Analysis (economic geography). "
+            "Treat as a range, not a single number."
+        ),
+    },
+    "income": {
+        "label": "Income",
+        "indicator_names": ["per_capita_income", "personal_income_total"],
+        "unit": "USD",
+        "note": (
+            "BEA personal income measures all income received by residents "
+            "(wages, benefits, investment income, government transfers). "
+            "Different from Census money income."
+        ),
+    },
+    "employment": {
+        "label": "Employment",
+        "indicator_names": ["employment_qcew", "unemployment_rate_bls"],
+        "unit": "mixed",
+        "note": (
+            "QCEW employment counts jobs at establishments. "
+            "BLS LAUS unemployment rate measures labor force status of residents. "
+            "These measure different things — don't divide one by the other."
+        ),
+    },
+}
+
 
 def _db_rows(query, params=()):
     if not DB_PATH.exists():
@@ -156,6 +162,7 @@ def _db_rows(query, params=()):
     finally:
         conn.close()
 
+
 def _get_freshness():
     if not DB_PATH.exists():
         return "N/A"
@@ -166,6 +173,7 @@ def _get_freshness():
         return row["latest"] if row and row["latest"] else "N/A"
     finally:
         conn.close()
+
 
 def _get_category_counts():
     if not DB_PATH.exists():
@@ -180,8 +188,8 @@ def _get_category_counts():
     finally:
         conn.close()
 
+
 def _get_coherence_disagreements():
-    """Find indicators that belong to the same coherence group but disagree."""
     disagreements = []
     for group_key, group in COHERENCE_GROUPS.items():
         rows = _db_rows(
@@ -192,7 +200,6 @@ def _get_coherence_disagreements():
         )
         if len(rows) < 2:
             continue
-        # Check if values differ meaningfully
         numeric_vals = []
         for r in rows:
             try:
@@ -202,29 +209,28 @@ def _get_coherence_disagreements():
         if len(numeric_vals) >= 2:
             spread = max(numeric_vals) - min(numeric_vals)
             if spread > 0:
-                disagreements.append({
-                    "group_key": group_key,
-                    "group_label": group["label"],
-                    "note": group["note"],
-                    "indicators": rows,
-                    "spread": spread,
-                })
+                disagreements.append(
+                    {
+                        "group_key": group_key,
+                        "group_label": group["label"],
+                        "note": group["note"],
+                        "indicators": rows,
+                        "spread": spread,
+                    }
+                )
     return disagreements
+
 
 @app.get("/", response_class=HTMLResponse)
 def index():
     rows = _db_rows("SELECT * FROM indicators ORDER BY category, name")
     if not rows:
-        return (
-            "<html><body><h1>Project Volusia</h1>"
-            "<p>No data loaded yet. Run refresh_v2.py first.</p></body></html>"
-        )
+        return "<html><body><h1>Project Volusia</h1><p>No data loaded yet. Run refresh_v2.py first.</p></body></html>"
 
     freshness = _get_freshness()
     category_counts = _get_category_counts()
     total = len(rows)
     disagreements = _get_coherence_disagreements()
-    key_status = validate_keys()
 
     html_parts = [
         "<html><head><title>Project Volusia — Open Data Portal</title>",
@@ -233,14 +239,8 @@ def index():
         '<div class="header">',
         "<h1>Project Volusia</h1>",
         "<p>Open Data Portal for Volusia County, Florida</p>",
-        '<div class="key-status {}">API Keys: {} of 3 configured</div>'.format(
-            "ok" if key_status["all_configured"] else "missing",
-            sum([key_status["census"], key_status["bls"], key_status["bea"]]),
-        ),
-        "</div>",
         '<div class="stats">',
-        f'<div class="stat"><div class="stat-value">{total}</div>'
-        f'<div class="stat-label">Indicators</div></div>',
+        f'<div class="stat"><div class="stat-value">{total}</div><div class="stat-label">Indicators</div></div>',
         f'<div class="stat"><div class="stat-value">{len(category_counts)}</div>'
         f'<div class="stat-label">Categories</div></div>',
         f'<div class="stat"><div class="stat-value">{len(disagreements)}</div>'
@@ -258,14 +258,13 @@ def index():
         '<div class="container">',
     ]
 
-    # ── Coherence disagreements panel ──
     if disagreements:
         html_parts.append('<div class="coherence-note">')
-        html_parts.append('<strong>Multiple sources, different numbers</strong>')
+        html_parts.append("<strong>Multiple sources, different numbers</strong>")
         html_parts.append(
-            '<p>The indicators below measure the same real-world quantity '
-            'from different sources with different methodologies and vintages. '
-            'Read them as a range, not a single number.</p>'
+            "<p>The indicators below measure the same real-world quantity "
+            "from different sources with different methodologies and vintages. "
+            "Read them as a range, not a single number.</p>"
         )
         html_parts.append('<div class="coherence-grid">')
         for d in disagreements:
@@ -273,22 +272,18 @@ def index():
             for ind in d["indicators"]:
                 try:
                     val = float(ind["value"])
-                    vals_html += (
-                        f'<span>{ind["name"]}: {ind["value"]} '
-                        f'({ind["source"]}, {ind["vintage"]})</span>'
-                    )
+                    vals_html += f"<span>{ind['name']}: {ind['value']} ({ind['source']}, {ind['vintage']})</span>"
                 except (ValueError, TypeError):
                     pass
             html_parts.append(
                 f'<div class="coherence-card">'
-                f'<h4>{d["group_label"]}</h4>'
+                f"<h4>{d['group_label']}</h4>"
                 f'<div class="values">{vals_html}</div>'
-                f'<p>{d["note"]}</p>'
-                f'</div>'
+                f"<p>{d['note']}</p>"
+                f"</div>"
             )
-        html_parts.append('</div></div>')
+        html_parts.append("</div></div>")
 
-    # ── Category cards ──
     categories = {}
     for row in rows:
         cat = row.get("category") or "Uncategorized"
@@ -299,7 +294,7 @@ def index():
         html_parts.append('<div class="category-header">')
         html_parts.append(f'<span class="category-title">{cat}</span>')
         html_parts.append(f'<span class="category-count">{len(items)} indicators</span>')
-        html_parts.append('</div>')
+        html_parts.append("</div>")
         html_parts.append('<div class="grid">')
         for item in items:
             name = item.get("name", "")
@@ -315,22 +310,18 @@ def index():
             html_parts.append(f'<div class="card-unit">{unit}</div>')
             html_parts.append('<div class="card-meta">')
             html_parts.append(f'<div class="card-source">Source: {source} ({vintage})</div>')
-            html_parts.append(f'<div>Refreshed: {fetched}</div>')
+            html_parts.append(f"<div>Refreshed: {fetched}</div>")
             if description:
-                html_parts.append(
-                    f'<div style="margin-top:0.5rem; font-style:italic;">{description}</div>'
-                )
-            html_parts.append('</div></div>')
-        html_parts.append('</div></div>')
+                html_parts.append(f'<div style="margin-top:0.5rem; font-style:italic;">{description}</div>')
+            html_parts.append("</div></div>")
+        html_parts.append("</div></div>")
 
     html_parts.append('<div class="footer">')
-    html_parts.append('<p>Project Volusia &middot; ZQM Labs</p>')
     html_parts.append(
-        f'<p>Data refreshed regularly from public U.S. government sources '
-        f'(Census, BLS, BEA, NOAA). '
-        f'<a href="{EXTERNAL_SITE_URL}">External site</a></p>'
+        '<p>Project Volusia &middot; ZQM Labs &middot; <a href="https://github.com/ZQM-Computing">GitHub</a></p>'
     )
-    html_parts.append('</div></div></body></html>')
+    html_parts.append("<p>Data from public U.S. government sources (Census, BLS, BEA, NOAA).</p>")
+    html_parts.append("</div></div></body></html>")
 
     return "".join(html_parts)
 
@@ -338,19 +329,21 @@ def index():
 @app.get("/api/indicators")
 def api_indicators():
     rows = _db_rows("SELECT * FROM indicators ORDER BY category, name")
-    # Add coherence group info
     for row in rows:
         for group_key, group in COHERENCE_GROUPS.items():
             if row["name"] in group["indicator_names"]:
                 row["coherence_group"] = group_key
                 row["coherence_group_label"] = group["label"]
                 row["coherence_note"] = group["note"]
-    return {"count": len(rows), "indicators": rows, "coherence_groups": list(COHERENCE_GROUPS.keys())}
+    return {
+        "count": len(rows),
+        "indicators": rows,
+        "coherence_groups": list(COHERENCE_GROUPS.keys()),
+    }
 
 
 @app.get("/api/coherence")
 def api_coherence():
-    """Returns detected disagreements between sources measuring the same quantity."""
     disagreements = _get_coherence_disagreements()
     return {
         "disagreements": disagreements,
@@ -364,16 +357,22 @@ def export_csv():
     rows = _db_rows("SELECT * FROM indicators ORDER BY category, name")
     if not rows:
         return Response(content="No data available", media_type="text/plain")
-
     output = io.StringIO()
-    writer = csv.DictWriter(
-        output,
-        fieldnames=[
-            "id", "name", "value", "unit", "category", "source",
-            "source_url", "vintage", "fetched_at", "description",
-            "coherence_group", "coherence_note",
-        ],
-    )
+    fieldnames = [
+        "id",
+        "name",
+        "value",
+        "unit",
+        "category",
+        "source",
+        "source_url",
+        "vintage",
+        "fetched_at",
+        "description",
+        "coherence_group",
+        "coherence_note",
+    ]
+    writer = csv.DictWriter(output, fieldnames=fieldnames)
     writer.writeheader()
     for row in rows:
         enriched = dict(row)
@@ -382,7 +381,6 @@ def export_csv():
                 enriched["coherence_group"] = group_key
                 enriched["coherence_note"] = group["note"]
         writer.writerow(enriched)
-
     return StreamingResponse(
         iter([output.getvalue()]),
         media_type="text/csv",
@@ -426,44 +424,29 @@ def api_health():
             freshness = row["latest"] if row and row["latest"] else "N/A"
         finally:
             conn.close()
-    key_status = validate_keys()
     return {
         "status": "healthy" if db_exists and indicator_count > 0 else "degraded",
         "db_exists": db_exists,
         "db_path": str(DB_PATH),
         "indicator_count": indicator_count,
         "latest_refresh": freshness,
-        "api_keys_configured": {
-            "census": key_status["census"],
-            "bls": key_status["bls"],
-            "bea": key_status["bea"],
-        },
     }
 
 
 @app.get("/api/status")
 def api_status():
-    """Executive summary of the portal and data freshness."""
     indicators = _db_rows("SELECT * FROM indicators ORDER BY fetched_at DESC")
     latest_update = indicators[0]["fetched_at"] if indicators else "N/A"
     disagreements = _get_coherence_disagreements()
     categories = _get_category_counts()
-    key_status = validate_keys()
-
     return {
         "system": "Project Volusia Open Data Portal",
         "status": "operational" if indicators else "degraded",
-        "version": "1.0.0",
+        "version": "2.0.0-coherent",
         "total_indicators": len(indicators),
         "latest_update": latest_update,
         "source_disagreements": len(disagreements),
         "categories": categories,
-        "api_keys": {
-            "census": key_status["census"],
-            "bls": key_status["bls"],
-            "bea": key_status["bea"],
-            "all_configured": key_status["all_configured"],
-        },
         "sla": {
             "data_freshness": "Monthly refresh",
             "uptime_target": "99.9%",
@@ -484,7 +467,6 @@ def api_status():
 
 @app.get("/api/coherence/groups")
 def api_coherence_groups():
-    """Returns the defined coherence groups and their members."""
     return {
         "groups": [
             {
@@ -501,9 +483,15 @@ def api_coherence_groups():
 
 if __name__ == "__main__":
     import uvicorn
-    print(f"Starting Project Volusia Portal on http://{PORTAL_HOST}:{PORTAL_PORT}")
+
+    host = os.environ.get("VOLUSIA_PORTAL_HOST", "127.0.0.1")
+    port = int(os.environ.get("VOLUSIA_PORTAL_PORT", "8789"))
+    print(f"Starting Project Volusia Portal v2.0-coherent on http://{host}:{port}")
     print(f"Database: {DB_PATH}")
-    key_status = validate_keys()
-    if not key_status["all_configured"]:
-        print("WARNING: Not all API keys configured — some data sources will fail")
-    uvicorn.run(app, host=PORTAL_HOST, port=PORTAL_PORT)
+    if DB_PATH.exists():
+        conn = sqlite3.connect(str(DB_PATH))
+        count = conn.execute("SELECT COUNT(*) FROM indicators").fetchone()[0]
+        print(f"Indicators loaded: {count}")
+        conn.close()
+    print(f"Coherence groups: {list(COHERENCE_GROUPS.keys())}")
+    uvicorn.run(app, host=host, port=port)
