@@ -1,93 +1,301 @@
-# ZQM Labs
+# Project Volusia — Open Data Portal & Intelligence Platform
 
 <p align="left">
   <img src="https://github.com/ZQM-Labs/project-volusia/actions/workflows/ci.yml/badge.svg" alt="CI" />
   <img src="https://github.com/ZQM-Labs/project-volusia/actions/workflows/tests.yml/badge.svg" alt="Tests" />
-  <img src="https://github.com/ZQM-Labs/project-volusia/actions/workflows/volusia-pipeline.yml/badge.svg" alt="Data pipeline" />
+  <img src="https://github.com/ZQM-Labs/project-volusia/actions/workflows/volusia-pipeline.yml/badge.svg" alt="Data Pipeline" />
 </p>
 
-> Status note: badges reflect live CI state (per ADR-005). Static "passing"
-> shields were removed because they made claims this repository does not yet
-> prove.
+**Data-driven commerce, open-source intelligence, and community resilience for Volusia County, Florida.**
 
-## Strategic Focus: Project Volusia
+Project Volusia is an open-source platform that aggregates public economic, demographic, climate, and employment data for Volusia County, FL (FIPS 12127) and serves it through a web portal, JSON API, and contribution system.
 
-**ZQM Labs is the research & development arm of Project Volusia** — the Q4 2026–2027 strategic focus for all ZQM research, tooling, and open-data infrastructure serving Volusia County, Florida.
+---
 
-ZQM Labs develops and maintains the open-source tooling, attestation frameworks, AI council systems, and intelligence platforms that power Project Volusia's mission: data-driven commerce, open-source intelligence, and community resilience for Volusia County.
+## Quick Start
 
-### About
+```bash
+# Clone
+git clone https://github.com/ZQM-Labs/project-volusia.git
+cd project-volusia
 
-- **Public Portal**: [Project Volusia Portal](https://github.com/ZQM-Computing/volusia-portal) — React data portal with 7 pages: Home, Data Explorer, Maps, Business, Residents, Tourists, Leaders
-- **Mission**: Data-driven commerce, open-source intelligence, and community resilience for Volusia County, Florida
-- **Constituencies**: Business owners, residents, tourists, and leaders
-- All repos are MIT-licensed. See [ZQM Computing](https://github.com/ZQM-Computing) for the public portal and IT services.
+# Set up environment
+cp Tools/.env.example Tools/.env
+# Edit Tools/.env and add your API keys (see below)
 
-## Repos
+# Run data pipeline
+python Tools/volusia_data/refresh_v2.py
 
-| Repo | Description | Topics |
-|------|-------------|--------|
-| [project-volusia](https://github.com/ZQM-Labs/project-volusia) | Project Volusia — Public Data Portal & Intelligence Platform for Volusia County, Florida | volusia, data-driven, data-portal, open-source-intelligence, community-resilience, research, react |
-| [awesome-windows-attestation](https://github.com/ZQM-Labs/awesome-windows-attestation) | Awesome Windows attestation: curated list of DFIR, BitLocker, TPM, compliance, and endpoint security resources | attestation, awesome-list, dfir, windows, compliance, zqm, volusia |
-| [zqm-attestation-toolkit](https://github.com/ZQM-Labs/zqm-attestation-toolkit) | ZQM Windows attestation toolkit: BitLocker, TPM, DFIR, endpoint security, and AI integrity verification | windows, dfir, compliance, bitlocker, tpm, attestation, zqm, volusia |
-| [zqm-security-policy](https://github.com/ZQM-Labs/zqm-security-policy) | ZQM enterprise security policies: CIS benchmarks, Windows hardening, compliance runbooks, and attestation | compliance, policy, security, windows, zqm, volusia |
-| [zqm-shield](https://github.com/ZQM-Labs/zqm-shield) | ZQM Shield: endpoint security and compliance controls for Windows — policy enforcement and attestation | compliance, windows, attestation, shield, zqm, volusia |
-| [zqm-sword](https://github.com/ZQM-Labs/zqm-sword) | ZQM Sword: endpoint defense and offensive security tooling for Windows penetration testing | zqm, security, windows, pentesting, sword, volusia |
-| [pqc-readiness-toolkit](https://github.com/ZQM-Labs/pqc-readiness-toolkit) | Post-quantum cryptography readiness: Windows compliance, PowerShell automation, and PQC migration tooling | compliance, post-quantum, pqc, windows, attestation, zqm, volusia |
-| [zqm-public-tools](https://github.com/ZQM-Labs/zqm-public-tools) | ZQM public tools: open-source Windows security, DFIR, attestation, and PowerShell automation utilities | attestation, dfir, powershell, windows, tools, zqm, volusia |
-| [zqm-attestation-briefs](https://github.com/ZQM-Labs/zqm-attestation-briefs) | ZQM attestation briefs: methodology samples, compliance guides, DFIR walkthroughs, and documentation | attestation, compliance, dfir, documentation, zqm, volusia |
-| [zqm-bounty-hub](https://github.com/ZQM-Labs/zqm-bounty-hub) | ZQM Bounty Hub: bug-bounty target routing, orchestration, and skill hub for HackerOne, GitLab, Shopify | automation, bug-bounty, orchestration, zqm, volusia |
-| [bounty-tools](https://github.com/ZQM-Labs/bounty-tools) | ZQM bug-bounty utilities: HackerOne, GitLab, Shopify target intel, token management, and automation | bug-bounty, security, hackerone, zqm, volusia |
-| [zqm-auth](https://github.com/ZQM-Labs/zqm-auth) | ZQM bug-bounty auth toolkit: token lifecycle, scope intelligence, and HackerOne/GitLab/Shopify auth | bug-bounty, security, auth, zqm, volusia |
-| [zqm-intel-platforms](https://github.com/ZQM-Labs/zqm-intel-platforms) | ZQM intelligence platforms: OSINT aggregation, threat intel, and data enrichment tooling | windows, zqm, intel, osint, volusia |
-| [zqm-supply-chain-scanner](https://github.com/ZQM-Labs/zqm-supply-chain-scanner) | Open-source supply-chain scanner: vulnerability detection, license compliance, outdated dependency detection | security, tools, zqm, volusia |
-| [zqm-local-tools](https://github.com/ZQM-Labs/zqm-local-tools) | ZQM local-first tools: self-hosted utilities with no paid API keys — Firecrawl via Crawl4A, Ollama, and more | tools, windows, zqm, local-first, volusia |
-| [zqm-hermes-skills](https://github.com/ZQM-Labs/zqm-hermes-skills) | ZQM Hermes skills: networking, Windows, LAN, GitHub, research, and automation modules | skills, hermes, windows, zqm, volusia |
-| [zqm-node-01-indexer](https://github.com/ZQM-Labs/zqm-node-01-indexer) | ZQM Node 01 indexer: Windows service catalog, MCP server, Docker compose, and indexer deployment | docker, indexer, mcp, windows, zqm, volusia |
-| [zqm-node-02-indexer](https://github.com/ZQM-Labs/zqm-node-02-indexer) | ZQM Node 02 indexer: service discovery, MCP server, Docker compose, and indexer deployment | docker, indexer, mcp, zqm, volusia |
-| [ollama-bridge](https://github.com/ZQM-Labs/ollama-bridge) | Ollama MCP bridge: capability-aware routing, per-call host override, and ZQM mesh model inference | bridge, mcp, ollama, mesh, zqm, volusia |
-| [comfy-custom](https://github.com/ZQM-Labs/comfy-custom) | ZQM ComfyUI fork: custom nodes, FARGO branding workflows, and Stable Diffusion image/video generation | ai, comfyui, stable-diffusion, zqm, volusia |
-| [comfyui-setup](https://github.com/ZQM-Labs/comfyui-setup) | ComfyUI Windows bootstrap: ZQM-branded installer, environment setup, and automated deployment scripts | automation, comfyui, windows, zqm, volusia |
-| [gemini-desktop](https://github.com/ZQM-Labs/gemini-desktop) | Gemini Desktop: Electron-based xAI Gemini client with ZQM mesh connectivity and local-first inference | ai, desktop, electron, gemini, zqm, volusia |
-| [zqm-workstage2](https://github.com/ZQM-Labs/zqm-workstage2) | ZQM workstage2 operational repo | security, tools, zqm, volusia |
-| [zqm-attestation-toolkit-clean](https://github.com/ZQM-Labs/zqm-attestation-toolkit-clean) | ZQM Windows attestation toolkit: BitLocker, TPM, DFIR, endpoint compliance, and secure boot verification | security, tools, zqm, volusia |
-| [Daly](https://github.com/ZQM-Labs/Daly) | Daly operational automation: PowerShell workflows for ZQM Windows environments and infrastructure | automation, powershell, windows, zqm, volusia |
-| [Whitefeather](https://github.com/ZQM-Labs/Whitefeather) | Whitefeather automation: ZQM PowerShell tooling for Windows workflow and infrastructure tasks | automation, powershell, windows, zqm, volusia |
-| [EaglesNest](https://github.com/ZQM-Labs/EaglesNest) | EaglesNest deployment automation: ZQM Windows infrastructure, monitoring, and release orchestration | automation, powershell, windows, zqm, deployment, volusia |
-| [logs](https://github.com/ZQM-Labs/logs) | ZQM internal logs: Windows service logs, operational telemetry, and archival for analysis | windows, zqm, logging, volusia |
-| [wiki](https://github.com/ZQM-Labs/wiki) | ZQM knowledge base: entity documentation, schemas, research findings, and operational procedures | documentation, wiki, zqm, volusia |
-| [dev-setup](https://github.com/ZQM-Labs/dev-setup) | ZQM Windows developer bootstrap: automated setup for PowerShell, Git, Python, and tooling | powershell, windows, zqm, dev-environment, volusia |
-| [zqm-localhost-findings](https://github.com/ZQM-Labs/zqm-localhost-findings) | ZQM localhost findings: service discovery, security assessment, and Windows endpoint analysis | localhost, security, windows, zqm, volusia |
-| [Universal-Map](https://github.com/ZQM-Labs/Universal-Map) | Universal Map: cross-platform entity and relationship mapping with visualization and export | data, mapping, visualization, zqm, volusia |
-| [ZQM-AI-Council](https://github.com/ZQM-Labs/ZQM-AI-Council) | ZQM AI Council: multi-agent deliberation engine for research, analysis, and sovereign decision-making | multi-agent, research, ai-council, zqm, volusia |
-| [scripts](https://github.com/ZQM-Labs/scripts) | ZQM shared scripts: reusable PowerShell and Python automation for Windows, deployment, and tooling | windows, zqm, scripts, powershell, volusia |
-| [data](https://github.com/ZQM-Labs/data) | ZQM internal data: Windows endpoint datasets, analytics, and repository for internal pipeline inputs | windows, zqm, data, volusia |
-| [Quick-Bot-Ledger](https://github.com/ZQM-Labs/Quick-Bot-Ledger) | Project Volusia contributor — ZQM infrastructure for Volusia County, Florida | volusia |
-| [.github](https://github.com/ZQM-Labs/.github) | ZQM Labs org governance: workflows, security policy, contributing guidelines, and org templates | zqm, governance, templates, volusia |
-| [ZQM-Labs](https://github.com/ZQM-Labs/ZQM-Labs) | ZQM Labs — Research & Development. Strategic focus: Project Volusia — data-driven commerce, open-source intelligence, and community resilience for Volusia County, Florida. | zqm, attestation, bug-bounty, forensics, organization, windows, volusia |
+# Start portal
+python Tools/volusia_data/portal_app.py
+# Open http://127.0.0.1:8789
 
-## Charter & Governance
+# Start contribution API (optional, separate terminal)
+python Tools/volusia_data/contribution_api.py
+# API docs at http://127.0.0.1:8790/docs
+```
 
-- **Project Volusia Charter**: [OPEN_INTELLIGENCE_DATA_DRIVEN_CHARTER.md](https://github.com/ZQM-Labs/project-volusia/blob/main/OPEN_INTELLIGENCE_DATA_DRIVEN_CHARTER.md)
-- **Guiding Principles**: [GUIDING_PRINCIPLES_VOLUSIA_COUNTY.md](https://github.com/ZQM-Labs/project-volusia/blob/main/GUIDING_PRINCIPLES_VOLUSIA_COUNTY.md)
-- **Mission Statement**: [MISSION_STATEMENT.md](https://github.com/ZQM-Labs/project-volusia/blob/main/MISSION_STATEMENT.md)
-- **Governance**: [PROJECT_VOLUSIA_GOV.md](https://github.com/ZQM-Labs/project-volusia/blob/main/PROJECT_VOLUSIA_GOV.md)
-- **Contributing**: [CONTRIBUTING.md](https://github.com/ZQM-Labs/project-volusia/blob/main/CONTRIBUTING.md)
-- **Data Sources**: [PUBLIC_DATA_SOURCE_RECON.md](https://github.com/ZQM-Labs/project-volusia/blob/main/PUBLIC_DATA_SOURCE_RECON.md)
-- **Phase 1 Operations**: [PHASE_1_OPERATIONS.md](https://github.com/ZQM-Labs/project-volusia/blob/main/PHASE_1_OPERATIONS.md)
+---
+
+## API Keys (Free Registration)
+
+Three sources require free API keys. Without them, the pipeline still works for the no-key sources (Census PEP, NOAA, QCEW).
+
+| Source | Register At | Env Var |
+|--------|-------------|---------|
+| Census ACS | https://api.census.gov/data/key_signup.html | `CENSUS_API_KEY` |
+| BLS LAUS | https://data.bls.gov/registrationEngine/ | `BLS_API_KEY` |
+| BEA Regional | https://apps.bea.gov/API/signup/index.cfm | `BEA_API_KEY` |
+
+Add keys to `Tools/.env` (see `Tools/.env.example`).
+
+---
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     Data Sources (6)                         │
+│  Census PEP │ Census ACS │ NOAA NCEI │ BLS LAUS │ BLS QCEW │ BEA │
+└──────────────────────────────┬──────────────────────────────┘
+                               │
+                    ┌──────────▼──────────┐
+                    │   refresh_v2.py     │
+                    │   (Unified Pipeline) │
+                    └──────────┬──────────┘
+                               │
+                    ┌──────────▼──────────┐
+                    │   volusia.db        │
+                    │   (SQLite, 10 rows) │
+                    └──────────┬──────────┘
+                               │
+              ┌────────────────┼────────────────┐
+              │                │                │
+    ┌─────────▼──────┐ ┌──────▼───────┐ ┌──────▼──────────┐
+    │  Portal (:8789) │ │ API (:8790)  │ │  Contribution   │
+    │  HTML + JSON    │ │ Submissions  │ │  Form (:8791)   │
+    │  + Chart PNGs   │ │ + Status     │ │  + Status       │
+    └────────────────┘ └──────────────┘ └─────────────────┘
+```
+
+---
+
+## Features
+
+### Data Pipeline
+- **6 fetchers**: Census PEP, Census ACS, NOAA NCEI, BLS LAUS, BLS QCEW, BEA Regional
+- **Unified pipeline**: `refresh_v2.py` runs all sources, writes to SQLite
+- **Scheduled refresh**: Windows Task Scheduler setup (`Tools/setup_scheduled_tasks.bat`)
+- **Audit logging**: `fetch_log.jsonl` records every fetch with timestamp and status
+- **Standalone CLIs**: Each fetcher can run independently with `--help`, `--output csv|json`, `--save`
+
+### Web Portal (FastAPI, port 8789)
+- **HTML dashboard**: Indicator cards with source citations and coherence groups
+- **JSON API**: `/api/indicators`, `/api/coherence`, `/api/status`, `/api/health`
+- **Data export**: `/api/export/csv`, `/api/export/json`
+- **Chart generation**: 3 matplotlib endpoints (population trend, employment overview, climate summary)
+- **SLA metadata**: Refresh cadence and uptime targets in `/api/status`
+- **Contribution form**: Mounted at `/contribute` (bilingual EN/ES)
+
+### Contribution System
+- **Lightweight API** (port 8790): Anonymous-first, 9 contribution types, idempotency keys
+- **Canonical API** (port 8899): SQLAlchemy + auth + rate tiers + pagination
+- **Web form** (port 8791): Pathway F (community knowledge) + Pathway I (ideas), status lookup
+- **Routing**: Contributions route to CGB members by type with fallback reviewers
+
+### Data Processing Tools
+- `clean.py`: Standardize columns, detect outliers (z-score), handle missing values
+- `geocode.py`: Census Geocoder + OpenStreetMap Nominatim
+- `aggregate.py`: Tract/zip/city to county with population-weighted means
+
+### Visualization Tools
+- `map.py`: Choropleth map generator (Leaflet HTML, no dependencies)
+- `render_report.py`: Markdown template → HTML report renderer
+
+### Monitoring
+- `health_check.py`: Data freshness + API connectivity monitoring
+- Returns non-zero exit code if data is stale (for cron alerting)
+
+---
+
+## API Endpoints
+
+### Portal (port 8789)
+
+| Endpoint | Type | Description |
+|----------|------|-------------|
+| `/` | HTML | Dashboard with indicator cards |
+| `/api/indicators` | JSON | All indicators with coherence groups |
+| `/api/coherence` | JSON | Source disagreement groups |
+| `/api/export/csv` | CSV | Download all indicators |
+| `/api/export/json` | JSON | Download with metadata |
+| `/api/health` | JSON | Health check |
+| `/api/status` | JSON | Full status with SLA + endpoints |
+| `/api/chart/population_trend.png` | PNG | Census PEP line chart |
+| `/api/chart/employment_overview.png` | PNG | QCEW bar chart |
+| `/api/chart/climate_summary.png` | PNG | NOAA bar chart |
+| `/contribute` | HTML | Contribution web form |
+
+### Contribution API (port 8790)
+
+| Endpoint | Type | Description |
+|----------|------|-------------|
+| `POST /api/v1/contributions` | JSON | Submit contribution |
+| `GET /api/v1/contributions/{id}` | JSON | Check status |
+| `GET /api/v1/contributions` | JSON | List submissions |
+| `PATCH /api/v1/contributions/{id}` | JSON | Update status (CGB triage) |
+
+---
+
+## Project Structure
+
+```
+Project-Volusia/
+├── Tools/
+│   ├── volusia_data/
+│   │   ├── refresh_v2.py          # Unified data pipeline
+│   │   ├── portal_app.py          # FastAPI portal (port 8789)
+│   │   ├── contribution_api.py    # Contribution API (port 8790)
+│   │   ├── portal_contribute.py   # Web form frontend (port 8791)
+│   │   ├── health_check.py        # Monitoring script
+│   │   ├── config.py              # Centralized configuration
+│   │   ├── fetchers/              # Standalone fetcher CLIs
+│   │   │   ├── fetch_census_pep.py
+│   │   │   ├── fetch_noaa.py
+│   │   │   ├── fetch_qcew.py
+│   │   │   ├── fetch_bls_laus.py
+│   │   │   └── fetch_bea.py
+│   │   ├── processing/            # Data processing tools
+│   │   │   ├── clean.py
+│   │   │   ├── geocode.py
+│   │   │   └── aggregate.py
+│   │   ├── viz/                   # Visualization tools
+│   │   │   ├── map.py
+│   │   │   └── render_report.py
+│   │   └── portal/
+│   │       └── app.py             # Deprecated (redirects to portal_app.py)
+│   ├── contribution-api/          # Canonical API (SQLAlchemy, port 8899)
+│   ├── collab/                    # Multi-writer collaboration tools
+│   └── setup_scheduled_tasks.bat  # Windows Task Scheduler setup
+├── tests/
+│   ├── test_portal.py             # 7 portal endpoint tests
+│   ├── test_contribution.py       # 18 contribution API tests
+│   ├── test_contribute.py         # Contribution web form tests
+│   └── test_fetchers.py           # 5 fetcher CLI tests
+├── .github/workflows/             # 6 CI/CD workflows
+├── docs/                          # Architecture decision records
+├── CONTRIBUTION/                  # Contribution pathway templates (8)
+├── Map/                           # Map catalog
+├── Report/                        # Report templates
+├── Data/                          # Data catalog + processed/published/raw
+├── MISSION_STATEMENT.md
+├── PROJECT_VOLUSIA_GOV.md
+├── GUIDING_PRINCIPLES_VOLUSIA_COUNTY.md
+├── METHODOLOGY.md
+├── Q4_2026_EXECUTION_PLAN.md
+├── STRATEGIC_FOCUS_Q4_2026_2027.md
+├── PRIORITY_TRADEOFFS.md
+├── STAKEHOLDER_INTERVIEW_GUIDE.md
+├── DATA_ASSET_AUDIT_VOLUSIA.md
+├── PUBLIC_DATA_SOURCE_RECON.md
+├── BUILD_REPORT.md
+├── Q4_2026_DELIVERY_STATUS.md
+├── CONTRIBUTING.md
+├── SECURITY.md
+└── README.md                      # This file
+```
+
+---
+
+## Current Data (10 Indicators)
+
+| Indicator | Value | Source | Vintage |
+|-----------|-------|--------|---------|
+| Population (2024) | 601,107 | Census PEP | 2024 |
+| Population (2023) | 591,936 | Census PEP | 2023 |
+| Population (2022) | 580,529 | Census PEP | 2022 |
+| Unemployment Rate | 5.3% | BLS LAUS | July 2026 |
+| Employment | 189,265 | BLS QCEW | 2024 |
+| Establishments | 16,756 | BLS QCEW | 2024 |
+| Avg Weekly Wage | $1,041 | BLS QCEW | 2024 |
+| Avg Max Temp | 28.1°C | NOAA NCEI | 2024 |
+| Avg Min Temp | 19.1°C | NOAA NCEI | 2024 |
+| Total Precipitation | 1,028 mm | NOAA NCEI | 2024 |
+
+**Missing (need API keys):** Census ACS population, BEA per capita income, BEA total income, BEA population
+
+---
+
+## Contributing
+
+We welcome contributions. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+### Ways to Contribute
+
+- **Data sources**: Add new fetchers for public data sources
+- **Tools**: Build data processing, visualization, or analysis tools
+- **Documentation**: Improve docs, methodology, or data audit
+- **Bug reports**: File issues with reproduction steps
+- **Code**: Submit PRs with tests
+
+### Multi-Writer Protocol
+
+This repo uses a claim-before-edit protocol for concurrent writers. See [COLLABORATION_CONVENTIONS.md](COLLABORATION_CONVENTIONS.md).
+
+### Contribution Pathways
+
+Community members can contribute without code. See the 8 pathway templates in `CONTRIBUTION/templates/`:
+
+- Data source submissions
+- Analysis submissions
+- Tool submissions
+- Map submissions
+- Report submissions
+- Community input
+- Social media input
+- Direct contributions
+
+---
 
 ## Governance
 
-- **Security Policy**: See [`.github/SECURITY.md`](https://github.com/ZQM-Labs/.github/blob/main/SECURITY.md)
-- **Contributing**: See [`.github/CONTRIBUTING.md`](https://github.com/ZQM-Labs/.github/blob/main/CONTRIBUTING.md)
-- **Dependabot**: Active on all repos
-- **CI/CD**: GitHub Actions on active repos
-- **License**: MIT on all repos
-- **Strategic Focus**: Project Volusia (Q4 2026–2027)
+- **Executive Sponsor**: Alex Zelenski (zqmcomputing@gmail.com)
+- **Governance Doc**: [PROJECT_VOLUSIA_GOV.md](PROJECT_VOLUSIA_GOV.md)
+- **Decision Authority**: Tier 1-4 framework (strategic → technical → data → comms)
+- **Meeting Cadence**: Weekly (30 min), Monthly (60 min), Quarterly (90 min)
+- **Next Review**: December 2, 2026
+
+---
+
+## Charter & Strategy
+
+- [MISSION_STATEMENT.md](MISSION_STATEMENT.md)
+- [STRATEGIC_FOCUS_Q4_2026_2027.md](STRATEGIC_FOCUS_Q4_2026_2027.md)
+- [Q4_2026_EXECUTION_PLAN.md](Q4_2026_EXECUTION_PLAN.md)
+- [PRIORITY_TRADEOFFS.md](PRIORITY_TRADEOFFS.md)
+- [GUIDING_PRINCIPLES_VOLUSIA_COUNTY.md](GUIDING_PRINCIPLES_VOLUSIA_COUNTY.md)
+- [OPEN_INTELLIGENCE_DATA_DRIVEN_CHARTER.md](OPEN_INTELLIGENCE_DATA_DRIVEN_CHARTER.md)
+- [METHODOLOGY.md](METHODOLOGY.md)
+
+---
+
+## Security
+
+- [SECURITY.md](SECURITY.md) — Vulnerability reporting policy
+- API keys are read from environment variables only (never hardcoded)
+- `.env` file is gitignored
+- Database is not tracked in git
+
+---
+
+## License
+
+MIT License. See [LICENSE](LICENSE) (to be added).
+
+---
 
 ## Links
 
-- [ZQM Computing](https://github.com/ZQM-Computing)
-- [Project Volusia Portal](https://github.com/ZQM-Computing/volusia-portal)
-- [ZQM Computing GitHub Pages](https://zqm-computing.github.io/ZQM-Computing/)
-- [ZQM Labs GitHub Pages](https://zqm-labs.github.io/ZQM-Labs/)
+- **ZQM Labs**: https://github.com/ZQM-Labs
+- **ZQM Computing**: https://github.com/ZQM-Computing
+- **ZQM Labs Pages**: https://zqm-labs.github.io/ZQM-Labs/
