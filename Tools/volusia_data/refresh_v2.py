@@ -50,6 +50,17 @@ def init_db():
             fetched_at TEXT,
             description TEXT
         );
+        CREATE TABLE IF NOT EXISTS time_series (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            indicator_name TEXT NOT NULL,
+            value REAL NOT NULL,
+            unit TEXT,
+            source TEXT,
+            vintage TEXT,
+            fetched_at TEXT NOT NULL,
+            UNIQUE(indicator_name, vintage, fetched_at)
+        );
+        CREATE INDEX IF NOT EXISTS idx_ts_indicator_date ON time_series(indicator_name, fetched_at);
         CREATE TABLE IF NOT EXISTS datasets (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             source TEXT,
@@ -80,6 +91,17 @@ def upsert_indicator(name, value, unit="", category="", source="",
             source_url=excluded.source_url, vintage=excluded.vintage,
             fetched_at=excluded.fetched_at, description=excluded.description
     """, (name, value, unit, category, source, source_url, vintage, ts, description))
+    
+    # Also store in time_series for historical tracking
+    try:
+        numeric_val = float(value)
+        conn.execute("""
+            INSERT OR IGNORE INTO time_series (indicator_name, value, unit, source, vintage, fetched_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (name, numeric_val, unit, source, vintage, ts))
+    except (ValueError, TypeError):
+        pass  # Skip non-numeric values
+    
     conn.commit()
 
 def log_action(action, details=""):

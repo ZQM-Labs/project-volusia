@@ -367,6 +367,7 @@ def api_indicators():
 def _chart_response(fig):
     """Convert matplotlib fig to PNG Response."""
     import io
+    import matplotlib.pyplot as plt
     buf = io.BytesIO()
     fig.savefig(buf, format="png", dpi=100, bbox_inches="tight")
     buf.seek(0)
@@ -620,6 +621,8 @@ def api_status():
         },
         "endpoints": {
             "homepage": "/",
+            "contribute": "/contribute",
+            "project_volusia": "/project-volusia",
             "indicators": "/api/indicators",
             "coherence": "/api/coherence",
             "export_csv": "/api/export/csv",
@@ -627,10 +630,114 @@ def api_status():
             "datasets": "/api/datasets",
             "health": "/api/health",
             "status": "/api/status",
+            "executive_summary": "/api/executive-summary",
             "chart_population": "/api/chart/population_trend.png",
             "chart_employment": "/api/chart/employment_overview.png",
             "chart_climate": "/api/chart/climate_summary.png",
         },
+    }
+
+
+@app.get("/api/executive-summary")
+def api_executive_summary():
+    """Executive briefing: key metrics, trends, and alerts."""
+    indicators = _db_rows("SELECT * FROM indicators ORDER BY category, name")
+    
+    # Build metrics
+    metrics = {}
+    for ind in indicators:
+        name = ind["name"]
+        try:
+            val = float(ind["value"])
+        except (ValueError, TypeError):
+            continue
+        metrics[name] = {
+            "value": val,
+            "unit": ind["unit"],
+            "source": ind["source"],
+            "vintage": ind["vintage"],
+        }
+    
+    # Key headlines
+    headlines = []
+    if "total_population_pep_2024" in metrics:
+        pop = metrics["total_population_pep_2024"]
+        headlines.append({
+            "metric": "Population",
+            "value": f"{pop['value']:,.0f}",
+            "unit": pop["unit"],
+            "source": pop["source"],
+            "vintage": pop["vintage"],
+        })
+    if "unemployment_rate_bls" in metrics:
+        ur = metrics["unemployment_rate_bls"]
+        headlines.append({
+            "metric": "Unemployment Rate",
+            "value": f"{ur['value']:.1f}%",
+            "unit": ur["unit"],
+            "source": ur["source"],
+            "vintage": ur["vintage"],
+        })
+    if "employment_qcew" in metrics:
+        emp = metrics["employment_qcew"]
+        headlines.append({
+            "metric": "Employment",
+            "value": f"{emp['value']:,.0f}",
+            "unit": emp["unit"],
+            "source": emp["source"],
+            "vintage": emp["vintage"],
+        })
+    if "establishments_qcew" in metrics:
+        est = metrics["establishments_qcew"]
+        headlines.append({
+            "metric": "Business Establishments",
+            "value": f"{est['value']:,.0f}",
+            "unit": est["unit"],
+            "source": est["source"],
+            "vintage": est["vintage"],
+        })
+    if "avg_weekly_wage_qcew" in metrics:
+        wage = metrics["avg_weekly_wage_qcew"]
+        headlines.append({
+            "metric": "Avg Weekly Wage",
+            "value": f"${wage['value']:,.0f}",
+            "unit": wage["unit"],
+            "source": wage["source"],
+            "vintage": wage["vintage"],
+        })
+    
+    # Data freshness summary
+    fresh_count = 0
+    stale_count = 0
+    now = datetime.now(timezone.utc)
+    for ind in indicators:
+        fetched = ind.get("fetched_at")
+        if fetched:
+            try:
+                fetched_dt = datetime.fromisoformat(fetched)
+                age = (now - fetched_dt).days
+                if age <= 30:
+                    fresh_count += 1
+                else:
+                    stale_count += 1
+            except (ValueError, TypeError):
+                pass
+    
+    # System status
+    operational = len(indicators) > 0 and stale_count < 3
+    
+    return {
+        "generated_at": now.isoformat(),
+        "system": "Project Volusia",
+        "status": "operational" if operational else "degraded",
+        "headlines": headlines,
+        "data_freshness": {
+            "fresh": fresh_count,
+            "stale": stale_count,
+            "total": fresh_count + stale_count,
+        },
+        "contribution_url": "/contribute",
+        "api_docs": "/api/status",
     }
 
 
