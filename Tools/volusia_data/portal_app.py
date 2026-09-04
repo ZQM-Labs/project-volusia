@@ -341,8 +341,11 @@ def contribute_page():
 
 
 @app.get("/project-volusia", response_class=HTMLResponse)
-def project_volusia_redirect():
-    """Redirect /project-volusia to the main portal page."""
+def project_volusia_portal():
+    """Serve the Project Volusia portal page."""
+    portal_html = Path(__file__).resolve().parent.parent.parent / "project-volusia.html"
+    if portal_html.exists():
+        return HTMLResponse(portal_html.read_text(encoding="utf-8"))
     return HTMLResponse("""<html><head><meta http-equiv="refresh" content="0; url=/"></head>
 <body><p>Redirecting to <a href="/">Project Volusia Portal</a>...</p></body></html>""")
 
@@ -468,6 +471,92 @@ def chart_employment_overview():
     for bar, val in zip(bars, values):
         ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height(),
                 f"{val:,.0f}", ha="center", va="bottom", fontsize=9)
+    fig.tight_layout()
+    return _chart_response(fig)
+
+
+@app.get("/api/chart/unemployment_trend.png")
+def chart_unemployment_trend():
+    """Line chart: BLS LAUS unemployment rate over time."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    rows = _db_rows(
+        "SELECT vintage, value FROM time_series WHERE indicator_name = 'unemployment_rate_bls' ORDER BY fetched_at"
+    )
+    
+    if not rows:
+        return _chart_no_data_response("No unemployment data available.\nRun refresh_v2.py to fetch data.")
+    
+    periods = []
+    rates = []
+    for r in rows:
+        try:
+            val = float(r["value"])
+            periods.append(r["vintage"])
+            rates.append(val)
+        except (ValueError, TypeError):
+            continue
+    
+    if not periods:
+        return _chart_no_data_response("No unemployment data available.")
+    
+    fig, ax = plt.subplots(figsize=(8, 4))
+    ax.plot(periods, rates, marker="o", color="#dc2626", linewidth=2)
+    ax.fill_between(range(len(rates)), rates, alpha=0.1, color="#dc2626")
+    ax.set_title("Volusia County Unemployment Rate (BLS LAUS)")
+    ax.set_xlabel("Period")
+    ax.set_ylabel("Unemployment Rate (%)")
+    ax.set_xticks(range(len(periods)))
+    ax.set_xticklabels(periods, rotation=45, ha="right")
+    ax.grid(True, alpha=0.3)
+    for i, v in enumerate(rates):
+        ax.annotate(f"{v:.1f}%", (i, v), textcoords="offset points",
+                    xytext=(0, 10), ha="center", fontsize=9)
+    fig.tight_layout()
+    return _chart_response(fig)
+
+
+@app.get("/api/chart/wage_trend.png")
+def chart_wage_trend():
+    """Line chart: QCEW average weekly wage over time."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    rows = _db_rows(
+        "SELECT vintage, value FROM time_series WHERE indicator_name = 'avg_weekly_wage_qcew' ORDER BY fetched_at"
+    )
+    
+    if not rows:
+        return _chart_no_data_response("No wage data available.\nRun refresh_v2.py to fetch data.")
+    
+    periods = []
+    wages = []
+    for r in rows:
+        try:
+            val = float(r["value"])
+            periods.append(r["vintage"])
+            wages.append(val)
+        except (ValueError, TypeError):
+            continue
+    
+    if not periods:
+        return _chart_no_data_response("No wage data available.")
+    
+    fig, ax = plt.subplots(figsize=(8, 4))
+    ax.plot(periods, wages, marker="o", color="#059669", linewidth=2)
+    ax.fill_between(range(len(wages)), wages, alpha=0.1, color="#059669")
+    ax.set_title("Volusia County Avg Weekly Wage (BLS QCEW)")
+    ax.set_xlabel("Period")
+    ax.set_ylabel("Avg Weekly Wage (USD)")
+    ax.set_xticks(range(len(periods)))
+    ax.set_xticklabels(periods, rotation=45, ha="right")
+    ax.grid(True, alpha=0.3)
+    for i, v in enumerate(wages):
+        ax.annotate(f"${v:,.0f}", (i, v), textcoords="offset points",
+                    xytext=(0, 10), ha="center", fontsize=9)
     fig.tight_layout()
     return _chart_response(fig)
 

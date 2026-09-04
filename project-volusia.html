@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project Volusia — Open Data Portal</title>
+  <meta name="description" content="Project Volusia: open-source intelligence for Volusia County, Florida. Economic indicators, workforce data, climate data, and public APIs.">
+  <style>
+    :root { --bg:#0f172a; --ink:#e2e8f0; --muted:#94a3b8; --accent:#38bdf8; --card:#1e293b; --border:#334155; --green:#10b981; --yellow:#f59e0b; --red:#ef4444; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: var(--bg); color: var(--ink); line-height:1.6; }
+    header { border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg); z-index: 100; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+    .nav { display:flex; justify-content:space-between; align-items:center; }
+    .logo { font-weight:800; letter-spacing:-0.02em; font-size:18px; color: var(--accent); }
+    .nav-links a { color: var(--ink); text-decoration:none; font-weight:500; padding:6px 10px; border-radius:6px; margin-left: 4px; }
+    .nav-links a:hover { background:#334155; color: var(--accent); }
+    .hero { padding: 48px 20px 32px; text-align: center; }
+    h1 { font-size: clamp(28px, 4vw, 44px); line-height:1.1; letter-spacing:-0.03em; margin:0 0 10px; }
+    .subtitle { font-size:16px; color: var(--muted); max-width:640px; margin:0 auto 20px; }
+    .metrics { display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:16px; margin: 32px 0; }
+    .metric { background: var(--card); border:1px solid var(--border); border-radius:12px; padding:20px; text-align: center; }
+    .metric-value { font-size: 28px; font-weight: 700; color: var(--accent); }
+    .metric-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px; }
+    .metric-source { font-size: 11px; color: var(--muted); margin-top: 8px; }
+    section { padding: 32px 20px; }
+    .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:14px; }
+    .card { background: var(--card); border:1px solid var(--border); border-radius:10px; padding:16px; }
+    .card h3 { margin: 0 0 8px; font-size: 15px; }
+    .card p { margin: 0; font-size: 13px; color: var(--muted); }
+    .charts { display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin: 20px 0; }
+    .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px; text-align: center; }
+    .chart-card img { max-width: 100%; height: auto; border-radius: 6px; }
+    .chart-title { font-size: 12px; color: var(--muted); margin-top: 8px; }
+    footer { border-top:1px solid var(--border); color: var(--muted); font-size:13px; padding: 16px 20px; text-align: center; }
+    .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--green); margin-right: 6px; }
+    .status-dot.stale { background: var(--yellow); }
+    .api-block { background:#1e293b; padding:12px 14px; border-radius:8px; border:1px solid #334155; font-family: ui-monospace, monospace; font-size:12px; overflow-x:auto; margin:8px 0; }
+    .api-block code { color:#a5f3fc; }
+    .btn { display:inline-block; padding:10px 14px; border-radius:8px; font-weight:600; text-decoration:none; border:1px solid #334155; color: var(--ink); background: var(--card); }
+    .btn:hover { background: #334155; }
+    .btn-primary { background: var(--accent); color: #0f172a; border-color: var(--accent); }
+    .btn-primary:hover { background: #0284c7; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container nav">
+      <div class="logo">Project Volusia</div>
+      <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/project-volusia">Portal</a>
+        <a href="/contribute/">Contribute</a>
+        <a href="https://github.com/ZQM-Labs/project-volusia">GitHub</a>
+      </div>
+    </div>
+  </header>
+  
+  <div class="hero">
+    <h1>Open Data Portal</h1>
+    <p class="subtitle">Real-time economic, demographic, and climate indicators for Volusia County, Florida. All data sourced from U.S. government public APIs.</p>
+    <div class="api-block" style="display:inline-block; text-align:left;">
+      <span class="status-dot"></span> Status: Operational &nbsp;|&nbsp;
+      Indicators: <span id="indicator-count">--</span> &nbsp;|&nbsp;
+      Last updated: <span id="last-updated">--</span>
+    </div>
+  </div>
+
+  <section>
+    <div class="container">
+      <h2>Key Metrics</h2>
+      <div class="metrics" id="metrics">
+        <div class="metric">
+          <div class="metric-value">--</div>
+          <div class="metric-label">Loading...</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="container">
+      <h2>Charts</h2>
+      <div class="charts">
+        <div class="chart-card">
+          <img src="/api/chart/population_trend.png" alt="Population Trend" loading="lazy">
+          <div class="chart-title">Population Trend (Census PEP)</div>
+        </div>
+        <div class="chart-card">
+          <img src="/api/chart/employment_overview.png" alt="Employment Overview" loading="lazy">
+          <div class="chart-title">Employment Overview (BLS QCEW)</div>
+        </div>
+        <div class="chart-card">
+          <img src="/api/chart/climate_summary.png" alt="Climate Summary" loading="lazy">
+          <div class="chart-title">Climate Summary 2024 (NOAA NCEI)</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="container">
+      <h2>API Access</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>GET /api/indicators</h3>
+          <p>All indicators with source, vintage, unit, and coherence group metadata.</p>
+        </div>
+        <div class="card">
+          <h3>GET /api/executive-summary</h3>
+          <p>Executive briefing with key metrics, trends, and data freshness.</p>
+        </div>
+        <div class="card">
+          <h3>GET /api/status</h3>
+          <p>System status, SLA metadata, refresh cadence, and endpoint index.</p>
+        </div>
+        <div class="card">
+          <h3>GET /api/export/json</h3>
+          <p>Download all indicators as JSON with full provenance metadata.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="container">
+      <h2>Data Sources</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>Census PEP</h3>
+          <p>Population Estimates Program. Annual county population estimates. No API key required.</p>
+        </div>
+        <div class="card">
+          <h3>BLS QCEW</h3>
+          <p>Quarterly Census of Employment and Wages. Employment, establishments, wages by county.</p>
+        </div>
+        <div class="card">
+          <h3>NOAA NCEI</h3>
+          <p>Daily weather summaries. Temperature, precipitation. Station: Daytona Beach Intl Airport.</p>
+        </div>
+        <div class="card">
+          <h3>BLS LAUS</h3>
+          <p>Local Area Unemployment Statistics. Monthly unemployment rate by county.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      &copy; ZQM Labs — Project Volusia. Public data from U.S. Census, BLS, BEA, NOAA. Contact: <a href="mailto:zqmcomputing@gmail.com" style="color:var(--accent);">zqmcomputing@gmail.com</a>
+    </div>
+  </footer>
+
+  <script>
+    // Load executive summary
+    fetch('/api/executive-summary')
+      .then(r => r.json())
+      .then(data => {
+        // Update status
+        document.getElementById('indicator-count').textContent = data.data_freshness?.total || '--';
+        document.getElementById('last-updated').textContent = data.generated_at?.slice(0, 10) || '--';
+        
+        // Update metrics
+        const metricsDiv = document.getElementById('metrics');
+        if (data.headlines?.length > 0) {
+          metricsDiv.innerHTML = data.headlines.map(h => `
+            <div class="metric">
+              <div class="metric-value">${h.value}</div>
+              <div class="metric-label">${h.metric}</div>
+              <div class="metric-source">${h.source} (${h.vintage})</div>
+            </div>
+          `).join('');
+        }
+      })
+      .catch(err => {
+        console.error('Failed to load executive summary:', err);
+      });
+  </script>
+</body>
+</html>
