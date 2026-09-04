@@ -7,9 +7,6 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
-# P1-024: the DB-commit step pushes with GITHUB_TOKEN; default token
-# permissions are read-only on newer orgs, so contents:write must be explicit
-# (same root cause as the SARIF-upload 403 fixed in P1-018's security-scan).
 permissions:
   contents: write
 jobs:
@@ -20,12 +17,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      # P1-024: previous step failed on every run (33788424825): no
-      # Tools/volusia_data/requirements.txt exists (2>/dev/null hid the error)
-      # and the fallback `pip install sqlite3` is impossible — sqlite3 is
-      # Python stdlib, not a pip distribution. Conditional install keeps the
-      # requirements-file option open; requests is the only third-party dep of
-      # refresh_v2 (proven by the successful P1-018-era pipeline runs).
       - name: Install dependencies
         run: |
           if [ -f Tools/volusia_data/requirements.txt ]; then
@@ -39,19 +30,9 @@ jobs:
           CENSUS_API_KEY: ${{ secrets.CENSUS_API_KEY }}
           BLS_API_KEY: ${{ secrets.BLS_API_KEY }}
           BEA_API_KEY: ${{ secrets.BEA_API_KEY }}
-      - name: Commit DB changes
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          # P1-024: volusia.db is gitignored (*.db) -> needs -f; --quiet must
-          # be --cached (unstaged diff is always empty after add, so the old
-          # chain never committed); [skip ci] prevents push-trigger recursion.
-          git add -f Tools/volusia_data/volusia.db
-          if git diff --cached --quiet; then
-            echo "No DB changes to commit"
-          else
-            git commit -m "chore: refresh volusia indicators [skip ci]"
-            git push
-          fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload DB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: volusia-db
+          path: Tools/volusia_data/volusia.db
+          retention-days: 30

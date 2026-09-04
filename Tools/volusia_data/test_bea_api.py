@@ -1,13 +1,18 @@
 """Test BEA API fetcher as a standalone function for refresh_v2.py"""
+import os
 import requests
 import json
 from datetime import datetime, timezone
 
 def fetch_bea():
     """Fetch BEA CAINC1 for Volusia County via API."""
+    api_key = os.environ.get("BEA_API_KEY", "")
+    if not api_key:
+        return False, "No BEA_API_KEY configured"
+    
     url = "https://apps.bea.gov/api/data"
     params = {
-        "UserID": "49ED5E15-6093-4A4E-ABBC-83E7BC38B324",
+        "UserID": api_key,
         "method": "GetData",
         "datasetname": "Regional",
         "TableName": "CAINC1",
