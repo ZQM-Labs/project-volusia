@@ -342,6 +342,130 @@ def api_indicators():
     }
 
 
+# ── Chart endpoints (matplotlib) ─────────────────────────────────────
+def _chart_response(fig):
+    """Convert matplotlib fig to PNG Response."""
+    import io
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png", dpi=100, bbox_inches="tight")
+    buf.seek(0)
+    plt.close(fig)
+    return Response(content=buf.read(), media_type="image/png")
+
+
+@app.get("/api/chart/population_trend.png")
+def chart_population_trend():
+    """Line chart: Census PEP population 2020-2024."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    rows = _db_rows(
+        "SELECT name, value FROM indicators WHERE name LIKE 'total_population_pep_%' ORDER BY name"
+    )
+    years = []
+    pops = []
+    for r in rows:
+        year = r["name"].split("_")[-1]
+        try:
+            val = int(r["value"])
+        except (ValueError, TypeError):
+            continue
+        years.append(year)
+        pops.append(val)
+
+    if not years:
+        return Response(content="No population data", media_type="text/plain")
+
+    fig, ax = plt.subplots(figsize=(8, 4))
+    ax.plot(years, pops, marker="o", color="#1e3a5f", linewidth=2)
+    ax.fill_between(years, pops, alpha=0.1, color="#1e3a5f")
+    ax.set_title("Volusia County Population (Census PEP)")
+    ax.set_xlabel("Year")
+    ax.set_ylabel("Population")
+    ax.grid(True, alpha=0.3)
+    for i, v in enumerate(pops):
+        ax.annotate(f"{v:,}", (years[i], v), textcoords="offset points",
+                    xytext=(0, 10), ha="center", fontsize=9)
+    fig.tight_layout()
+    return _chart_response(fig)
+
+
+@app.get("/api/chart/employment_overview.png")
+def chart_employment_overview():
+    """Bar chart: QCEW establishments, employment, weekly wage."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    rows = _db_rows(
+        "SELECT name, value, unit FROM indicators WHERE name IN "
+        "('establishments_qcew','employment_qcew','avg_weekly_wage_qcew')"
+    )
+    labels = []
+    values = []
+    for r in rows:
+        label = r["name"].replace("_qcew", "").replace("_", " ").title()
+        try:
+            val = float(r["value"])
+        except (ValueError, TypeError):
+            continue
+        labels.append(label)
+        values.append(val)
+
+    if not labels:
+        return Response(content="No employment data", media_type="text/plain")
+
+    fig, ax = plt.subplots(figsize=(8, 4))
+    colors = ["#1e3a5f", "#2b6cb0", "#63b3ed"]
+    bars = ax.bar(labels, values, color=colors[: len(labels)])
+    ax.set_title("Volusia County Employment Overview (QCEW 2024)")
+    ax.set_ylabel("Value")
+    ax.grid(True, alpha=0.3, axis="y")
+    for bar, val in zip(bars, values):
+        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height(),
+                f"{val:,.0f}", ha="center", va="bottom", fontsize=9)
+    fig.tight_layout()
+    return _chart_response(fig)
+
+
+@app.get("/api/chart/climate_summary.png")
+def chart_climate_summary():
+    """Bar chart: NOAA 2024 temperature and precipitation summary."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    rows = _db_rows(
+        "SELECT name, value, unit FROM indicators WHERE name LIKE 'avg_%_temp_2024' OR name = 'total_precip_2024'"
+    )
+    labels = []
+    values = []
+    for r in rows:
+        label = r["name"].replace("_2024", "").replace("_", " ").title()
+        try:
+            val = float(r["value"])
+        except (ValueError, TypeError):
+            continue
+        labels.append(label)
+        values.append(val)
+
+    if not labels:
+        return Response(content="No climate data", media_type="text/plain")
+
+    fig, ax = plt.subplots(figsize=(8, 4))
+    colors = ["#c53030", "#dd6b20", "#38a169"]
+    bars = ax.bar(labels, values, color=colors[: len(labels)])
+    ax.set_title("Volusia County Climate Summary 2024 (NOAA NCEI)")
+    ax.set_ylabel("Value (tenths C / tenths mm)")
+    ax.grid(True, alpha=0.3, axis="y")
+    for bar, val in zip(bars, values):
+        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height(),
+                f"{val:,.1f}", ha="center", va="bottom", fontsize=9)
+    fig.tight_layout()
+    return _chart_response(fig)
+
+
 @app.get("/api/coherence")
 def api_coherence():
     disagreements = _get_coherence_disagreements()
@@ -461,6 +585,9 @@ def api_status():
             "datasets": "/api/datasets",
             "health": "/api/health",
             "status": "/api/status",
+            "chart_population": "/api/chart/population_trend.png",
+            "chart_employment": "/api/chart/employment_overview.png",
+            "chart_climate": "/api/chart/climate_summary.png",
         },
     }
 
@@ -494,4 +621,13 @@ if __name__ == "__main__":
         print(f"Indicators loaded: {count}")
         conn.close()
     print(f"Coherence groups: {list(COHERENCE_GROUPS.keys())}")
+
+    # Mount contribution web form if available
+    try:
+        from volusia_data.portal_contribute import router as contribute_router
+        app.mount("/contribute", contribute_router)
+        print("Contribution form mounted at /contribute")
+    except ImportError:
+        print("Contribution form not available (portal_contribute.py not found)")
+
     uvicorn.run(app, host=host, port=port)
