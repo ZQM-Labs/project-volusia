@@ -1,0 +1,21 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Volusia County, FL",
+        "GEOID": "12127",
+        "population": 601107,
+        "density": 433.5,
+        "area_sqmi": 1386.0
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-81.658, 29.428], [-81.658, 28.614], [-80.839, 28.614], [-80.839, 29.428], [-81.658, 29.428]
+        ]]
+      }
+    }
+  ]
+}

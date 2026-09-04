@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Volusia County — Population (2024)</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        body { margin: 0; padding: 0; font-family: system-ui, sans-serif; }
+        #map { height: 100vh; width: 100%; }
+        .legend {
+            background: white; padding: 10px; border-radius: 4px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.2); line-height: 1.5;
+        }
+        .legend i { width: 18px; height: 18px; display: inline-block; margin-right: 8px; }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script>
+        var map = L.map('map').setView([29.0, -81.0], 10);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+        
+        var geojson = {"type": "FeatureCollection", "features": [{"type": "Feature", "properties": {"name": "Volusia County, FL", "GEOID": "12127", "population": 601107, "density": 433.5, "area_sqmi": 1386.0}, "geometry": {"type": "Polygon", "coordinates": [[[-81.658, 29.428], [-81.658, 28.614], [-80.839, 28.614], [-80.839, 29.428], [-81.658, 29.428]]]}}]};
+        
+        function style(feature) {
+            var val = parseFloat(feature.properties['population']) || 0;
+            var ratio = (val - 601107.0) / 1;
+            var r = Math.floor(255 * ratio);
+            var b = Math.floor(255 * (1 - ratio));
+            return {
+                fillColor: 'rgb(' + r + ', 50, ' + b + ')',
+                weight: 1,
+                opacity: 1,
+                color: 'white',
+                fillOpacity: 0.7
+            };
+        }
+        
+        function onEachFeature(feature, layer) {
+            var props = feature.properties;
+            var popup = '<b>' + (props.NAME || props.name || 'Area') + '</b><br>';
+            popup += 'population: ' + (props['population'] || 'N/A');
+            layer.bindPopup(popup);
+        }
+        
+        L.geoJSON(geojson, { style: style, onEachFeature: onEachFeature }).addTo(map);
+        
+        // Legend
+        var legend = L.control({ position: 'bottomright' });
+        legend.onAdd = function(map) {
+            var div = L.DomUtil.create('div', 'legend');
+            div.innerHTML = '<b>population</b><br>';
+            for (var i = 0; i <= 5; i++) {
+                var val = 601107.0 + (1 * i / 5);
+                var ratio = i / 5;
+                var r = Math.floor(255 * ratio);
+                var b = Math.floor(255 * (1 - ratio));
+                div.innerHTML += '<i style="background:rgb(' + r + ',50,' + b + ')"></i> ' + val.toFixed(1) + '<br>';
+            }
+            return div;
+        };
+        legend.addTo(map);
+    </script>
+</body>
+</html>
