@@ -43,29 +43,38 @@ VALID_CONTRIBUTION_TYPES = [
     "community", "social_media", "educational", "direct",
 ]
 
-# ── Contribution routing: PRIMARY + FALLBACK nodes ─────────────────────
-# Types that require HUMAN judgment (community-facing) have humans as
-# primary, with Governance Chair as fallback.
-# Types that require CAPABILITY (data, analysis, tools, GIS) route to
-# ZQM-Nodes by capability, with human reviewers as fallback.
-#
-# Format: (primary, fallback)
+# ── Contribution routing ─────────────────────────────────────────────
+# Primary reviewer per contribution type. Fallback is the Governance Chair
+# for all types unless noted below.
 CONTRIBUTION_ROUTING = {
     # Data source: Node-3 has data pipeline capability
-    "data_source":  ("Node-3 (Data Pipeline)", "Methodologist"),
+    "data_source":  "Node-3 (Data Pipeline)",
     # Analysis: Node-2 has analytical capability
-    "analysis":     ("Node-2 (Analysis)", "Methodologist"),
+    "analysis":     "Node-2 (Analysis)",
     # Tool: Node-5 has tool testing capability
-    "tool":         ("Node-5 (Tool Test)", "Tool Owner"),
+    "tool":         "Node-5 (Tool Test)",
     # Map: Node-1 has GIS capability
-    "map":          ("Node-1 (GIS)", "GIS Lead"),
+    "map":          "Node-1 (GIS)",
     # Report: Report Lead (human)
-    "report":       ("Report Lead", "Community Liaison"),
-    # Community-facing: all route to Community Liaison with Governance Chair fallback
-    "community":    ("Community Liaison", "Governance Chair"),
-    "social_media": ("Community Liaison", "Governance Chair"),
-    "educational":  ("Community Liaison", "Governance Chair"),
-    "direct":       ("Community Liaison", "Governance Chair"),
+    "report":       "Report Lead",
+    # Community-facing: all route to Community Liaison
+    "community":    "Community Liaison",
+    "social_media": "Community Liaison",
+    "educational":  "Community Liaison",
+    "direct":       "Community Liaison",
+}
+
+# Fallback reviewers if primary is unavailable
+CONTRIBUTION_FALLBACK = {
+    "data_source":  "Methodologist",
+    "analysis":     "Methodologist",
+    "tool":         "Tool Owner",
+    "map":          "GIS Lead",
+    "report":       "Community Liaison",
+    "community":    "Governance Chair",
+    "social_media": "Governance Chair",
+    "educational":  "Governance Chair",
+    "direct":       "Governance Chair",
 }
 
 
@@ -138,17 +147,9 @@ async def submit_contribution(request: Request):
     ts = datetime.now().strftime("%Y%m%d%H%M%S%f")
     submission_id = f"SUB-{contribution_type.upper()}-{ts}"
 
-    # Determine routing
-    # P1-023 shim (worktree-only, to be absorbed by the author): in-flight
-    # CONTRIBUTION_ROUTING values are (primary, fallback) tuples while every
-    # consumer below binds/returns a plain string. Coerce to the primary so
-    # submits cannot fail with "type 'tuple' is not supported" (caught by
-    # tests/test_contribution.py). Delete once routing values are strings.
+    # Determine routing (primary reviewer)
     reviewer = CONTRIBUTION_ROUTING.get(contribution_type, "Community Liaison")
-    if isinstance(reviewer, tuple):
-        reviewer = reviewer[0] if reviewer and reviewer[0] else "Community Liaison"
-    elif not isinstance(reviewer, str):
-        reviewer = str(reviewer)
+    fallback_reviewer = CONTRIBUTION_FALLBACK.get(contribution_type, "Governance Chair")
 
     # Store submission
     conn = _db()
@@ -206,6 +207,7 @@ async def submit_contribution(request: Request):
         "acknowledged_at": now,
         "estimated_review_by": review_by.isoformat(),
         "reviewer": reviewer,
+        "fallback_reviewer": fallback_reviewer,
         "anonymous": not author_email,
         "message": "Contribution received. You will receive an update within 5 business days.",
     })
@@ -321,6 +323,7 @@ async def root():
         "version": "1.0.0",
         "anonymous_submissions": not bool(ALLOWED_API_KEYS),
         "contribution_routing": CONTRIBUTION_ROUTING,
+        "contribution_fallback": CONTRIBUTION_FALLBACK,
         "endpoints": {
             "submit": "POST /api/v1/contributions",
             "status": "GET /api/v1/contributions/{submission_id}",
