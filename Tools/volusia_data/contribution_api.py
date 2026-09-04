@@ -143,6 +143,15 @@ async def submit_contribution(request: Request):
     if empty:
         raise HTTPException(status_code=400, detail="Content is required and must be non-empty")
 
+    # Extract title from content if available
+    title = ""
+    if isinstance(content, dict):
+        title = content.get("title", content.get("topic", ""))
+        # Flatten content for storage
+        content = json.dumps(content)
+    elif isinstance(content, str):
+        title = content[:100]
+
     # Generate submission ID
     ts = datetime.now().strftime("%Y%m%d%H%M%S%f")
     submission_id = f"SUB-{contribution_type.upper()}-{ts}"

@@ -49,12 +49,14 @@ app = FastAPI(title="Project Volusia — Contribute", version="1.0.0")
 BRAND = "Project Volusia"
 NAV_EN = [
     ("/", "Home"),
+    ("/contribute", "Contribute"),
     ("/f", "Share knowledge"),
     ("/i", "Share a thought"),
     ("/status", "Check status"),
 ]
 NAV_ES = [
     ("/es", "Inicio"),
+    ("/es/contribute", "Contribuya"),
     ("/es/f", "Compartir conocimiento"),
     ("/es/i", "Compartir una idea"),
     ("/es/status", "Consultar estado"),

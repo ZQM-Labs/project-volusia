@@ -326,6 +326,20 @@ def index():
     return "".join(html_parts)
 
 
+@app.get("/contribute", response_class=HTMLResponse)
+def contribute_page():
+    """Serve the contribution landing page."""
+    # Try multiple locations for the contribute page
+    locations = [
+        Path(__file__).resolve().parent / "portal" / "contribute.html",
+        Path(__file__).resolve().parent.parent.parent / "contribute.html",
+    ]
+    for loc in locations:
+        if loc.exists():
+            return HTMLResponse(loc.read_text(encoding="utf-8"))
+    return HTMLResponse("<html><body><h1>Contribute</h1><p>Contribution form loading...</p></body></html>")
+
+
 @app.get("/api/indicators")
 def api_indicators():
     rows = _db_rows("SELECT * FROM indicators ORDER BY category, name")

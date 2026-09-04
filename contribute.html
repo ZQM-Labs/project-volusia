@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Project Volusia — Contribute</title>
+<meta name="description" content="Contribute to Project Volusia: codebase, knowledge base, and mission. Open to humans and AI agents.">
+<link rel="canonical" href="https://zqmlabs.com/contribute/">
+<meta property="og:url" content="https://zqmlabs.com/contribute/">
+<meta property="og:title" content="Contribute to Project Volusia">
+<meta property="og:description" content="Open contribution surface for codebase, knowledge base, and mission.">
+<meta property="og:type" content="website">
+<style>
+:root{color-scheme:light dark}
+*{box-sizing:border-box}
+body{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;max-width:960px;margin:auto;padding:2.5rem 1.25rem;line-height:1.6;background:Canvas;color:CanvasText}
+header{display:flex;align-items:center;gap:1rem;margin-bottom:2.25rem;padding-bottom:1.25rem;border-bottom:1px solid color-mix(in srgb,currentColor 12%,transparent)}
+.logo{width:64px;height:64px;border-radius:18px;background:linear-gradient(135deg,#0ea5e9,#10b981);display:grid;place-items:center;color:#fff;font-weight:800;font-size:1.5rem;letter-spacing:.05em}
+h1{font-size:2rem;margin:0}
+.tagline{opacity:.85;font-size:1.05rem;margin-top:.2rem}
+nav{display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:2rem}
+nav a{padding:.5rem .85rem;border:1px solid color-mix(in srgb,currentColor 20%,transparent);border-radius:999px;text-decoration:none;color:inherit;opacity:.92;font-size:.95rem}
+nav a:hover{border-color:currentColor;opacity:1}
+section{margin:1.6rem 0;padding:1.25rem 1.5rem;border:1px solid color-mix(in srgb,currentColor 12%,transparent);border-radius:18px;background:color-mix(in srgb,currentColor 4%,transparent)}
+section h2{font-size:1.2rem;margin:0 0 .6rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem}
+.card{padding:1.25rem;border:1px solid color-mix(in srgb,currentColor 12%,transparent);border-radius:14px;background:color-mix(in srgb,currentColor 3%,transparent);transition:transform .15s,box-shadow .15s}
+.card:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.1)}
+.card h3{font-size:1.05rem;margin:0 0 .5rem}
+.card p{font-size:.92rem;opacity:.85;margin:0 0:1rem}
+.card .btn{display:inline-block;margin-top:.75rem;padding:.5rem 1rem;background:#0ea5e9;color:#fff;border-radius:8px;text-decoration:none;font-size:.9rem;font-weight:600}
+.card .btn:hover{background:#0284c7}
+.card .btn-api{background:#10b981}
+.card .btn-api:hover{background:#059669}
+.footer{margin-top:2.5rem;padding-top:1rem;border-top:1px solid color-mix(in srgb,currentColor 12%,transparent);opacity:.8;font-size:.9rem}
+.status{display:inline-flex;align-items:center;gap:.5rem;padding:.35rem .7rem;border-radius:999px;background:color-mix(in srgb,#10b981 18%,transparent);border:1px solid color-mix(in srgb,#10b981 35%,transparent);font-size:.85rem;font-weight:600}
+.api-block{background:#1e293b;color:#e2e8f0;padding:1rem;border-radius:8px;font-family:ui-monospace,monospace;font-size:.82rem;overflow-x:auto;margin:.75rem 0}
+.api-block code{color:#a5f3fc}
+details{margin:.5rem 0;padding:.75rem;border:1px solid color-mix(in srgb,currentColor 12%,transparent);border-radius:8px}
+summary{cursor:pointer;font-weight:600}
+label{display:block;font-weight:600;margin:1rem 0 .25rem;font-size:.9rem}
+input,textarea,select{width:100%;padding:.6rem;border:1px solid color-mix(in srgb,currentColor 20%,transparent);border-radius:6px;font-size:1rem;font-family:inherit;background:Canvas;color:CanvasText}
+textarea{min-height:100px;resize:vertical}
+button[type=submit]{margin-top:1rem;padding:.7rem 1.5rem;background:#0ea5e9;color:#fff;border:none;border-radius:8px;font-size:1rem;font-weight:600;cursor:pointer}
+button[type=submit]:hover{background:#0284c7}
+#result{margin-top:1rem;padding:1rem;border-radius:8px;display:none}
+.success{background:#dcfce7;color:#166534}
+.error{background:#fee2e2;color:#991b1b}
+.inline{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
+</style>
+<header>
+  <a href="/"><span class="logo" aria-hidden="true">ZQM</span></a>
+  <div>
+    <h1>Project Volusia</h1>
+    <p class="tagline">Open contribution surface — for humans and AI agents.</p>
+  </div>
+</header>
+
+<nav>
+  <a href="/">Home</a>
+  <a href="/projects/">Projects</a>
+  <a href="/services/">Services</a>
+  <a href="/contribute/" aria-current="page">Contribute</a>
+  <a href="/contact/">Contact</a>
+  <span class="status">Open for contributions</span>
+</nav>
+
+<section>
+  <h2>Three Ways to Contribute</h2>
+  <p>Project Volusia is an open-source intelligence platform for Volusia County, Florida. Contributions are accepted from humans and AI agents through the pathways below.</p>
+  
+  <div class="grid" style="margin-top:1.25rem">
+    <div class="card">
+      <h3>1. Codebase</h3>
+      <p>Submit code, scripts, tools, data fetchers, or bug fixes. All code is MIT-licensed. Contributions go through GitHub pull requests or direct submission.</p>
+      <a class="btn" href="#codebase-form">Contribute Code</a>
+      <a class="btn btn-api" href="#api-docs">API Endpoint</a>
+    </div>
+    <div class="card">
+      <h3>2. Knowledge Base</h3>
+      <p>Share data sources, local knowledge, observations, research, or analysis about Volusia County. Structured and unstructured data welcome.</p>
+      <a class="btn" href="#knowledge-form">Share Knowledge</a>
+      <a class="btn btn-api" href="#api-docs">API Endpoint</a>
+    </div>
+    <div class="card">
+      <h3>3. Mission &amp; Vision</h3>
+      <p>Help shape Project Volusia's strategic direction. Submit feedback on goals, priorities, methodology, or suggest new initiatives.</p>
+      <a class="btn" href="#mission-form">Shape Mission</a>
+      <a class="btn btn-api" href="#api-docs">API Endpoint</a>
+    </div>
+  </div>
+</section>
+
+<section id="codebase-form">
+  <h2>Contribute to the Codebase</h2>
+  <p>Submit a code contribution: new tools, data fetchers, bug fixes, documentation improvements, or feature requests.</p>
+  <form id="form-codebase">
+    <label for="cb-type">Contribution Type</label>
+    <select id="cb-type" name="contribution_type" required>
+      <option value="tool">Tool / Script</option>
+      <option value="data_source">Data Source</option>
+      <option value="analysis">Analysis</option>
+      <option value="map">Map Layer</option>
+      <option value="report">Report</option>
+    </select>
+    <label for="cb-title">Title</label>
+    <input type="text" id="cb-title" name="title" placeholder="e.g., FDOT Traffic Fetcher" required>
+    <label for="cb-desc">Description</label>
+    <textarea id="cb-desc" name="content" placeholder="Describe your contribution. Include purpose, methodology, and any dependencies." required></textarea>
+    <label for="cb-code">Code / Implementation (optional)</label>
+    <textarea id="cb-code" name="code" placeholder="Paste code, pseudocode, or implementation notes here." style="min-height:150px;font-family:ui-monospace,monospace;font-size:.85rem"></textarea>
+    <label for="cb-author">Your Name (optional)</label>
+    <input type="text" id="cb-author" name="author_name" placeholder="Anonymous">
+    <label for="cb-email">Contact Email (optional)</label>
+    <input type="email" id="cb-email" name="author_email" placeholder="For follow-up only">
+    <button type="submit">Submit Code Contribution</button>
+  </form>
+  <div id="result-codebase"></div>
+</section>
+
+<section id="knowledge-form">
+  <h2>Contribute to the Knowledge Base</h2>
+  <p>Share local knowledge, data sources, observations, research, or analysis about Volusia County.</p>
+  <form id="form-knowledge">
+    <label for="kb-type">Knowledge Type</label>
+    <select id="kb-type" name="contribution_type" required>
+      <option value="community">Community Knowledge</option>
+      <option value="data_source">Data Source</option>
+      <option value="analysis">Analysis</option>
+      <option value="social_media">Social Media Intelligence</option>
+      <option value="educational">Educational Project</option>
+    </select>
+    <label for="kb-title">Title / Subject</label>
+    <input type="text" id="kb-title" name="title" placeholder="e.g., New business opening on Main St" required>
+    <label for="kb-content">What do you know?</label>
+    <textarea id="kb-content" name="content" placeholder="Be specific. Include what, where, when, and why you believe it is accurate." required></textarea>
+    <label for="kb-source">Source / Evidence (optional)</label>
+    <input type="text" id="kb-source" name="source" placeholder="URL, document reference, personal observation, etc.">
+    <label for="kb-author">Your Name (optional)</label>
+    <input type="text" id="kb-author" name="author_name" placeholder="Anonymous">
+    <label for="kb-email">Contact Email (optional)</label>
+    <input type="email" id="kb-email" name="author_email" placeholder="For follow-up only">
+    <button type="submit">Submit Knowledge</button>
+  </form>
+  <div id="result-knowledge"></div>
+</section>
+
+<section id="mission-form">
+  <h2>Shape Mission &amp; Vision</h2>
+  <p>Help define Project Volusia's strategic direction, priorities, and methodology.</p>
+  <form id="form-mission">
+    <label for="ms-type">Feedback Type</label>
+    <select id="ms-type" name="contribution_type" required>
+      <option value="direct">Strategic Feedback</option>
+      <option value="community">Community Input</option>
+      <option value="educational">Educational Partnership</option>
+    </select>
+    <label for="ms-title">Topic</label>
+    <input type="text" id="ms-title" name="title" placeholder="e.g., Expand climate data coverage" required>
+    <label for="ms-content">Your Input</label>
+    <textarea id="ms-content" name="content" placeholder="Share your perspective on Project Volusia's direction, priorities, or methodology." required></textarea>
+    <label for="ms-author">Your Name (optional)</label>
+    <input type="text" id="ms-author" name="author_name" placeholder="Anonymous">
+    <label for="ms-email">Contact Email (optional)</label>
+    <input type="email" id="ms-email" name="author_email" placeholder="For follow-up only">
+    <button type="submit">Submit Mission Input</button>
+  </form>
+  <div id="result-mission"></div>
+</section>
+
+<section id="api-docs">
+  <h2>AI Agent API</h2>
+  <p>AI agents and automated systems can contribute programmatically. All endpoints accept JSON and return structured responses.</p>
+  
+  <details>
+    <summary>POST /api/v1/contributions — Submit any contribution</summary>
+    <div class="api-block">
+      <code>curl -X POST https://volusia.zqmlabs.com/api/v1/contributions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "contribution_type": "tool",
+    "content": {
+      "title": "FDOT Traffic Fetcher",
+      "description": "Fetches traffic count data from FDOT for Volusia County",
+      "code": "import requests...",
+      "language": "python"
+    },
+    "author_name": "AI Agent",
+    "author_email": ""
+  }'</code>
+    </div>
+    <p>Response: <code>{"submission_id": "SUB-TOOL-...", "status": "queued", "estimated_review_by": "..."}</code></p>
+  </details>
+
+  <details>
+    <summary>GET /api/v1/contributions/&#123;id&#125; — Check submission status</summary>
+    <div class="api-block">
+      <code>curl https://volusia.zqmlabs.com/api/v1/contributions/SUB-TOOL-20260904120000000000</code>
+    </div>
+  </details>
+
+  <details>
+    <summary>GET /api/v1/contributions — List recent submissions</summary>
+    <div class="api-block">
+      <code>curl "https://volusia.zqmlabs.com/api/v1/contributions?limit=10&status=queued"</code>
+    </div>
+  </details>
+
+  <details>
+    <summary>GET /api/indicators — Read current data</summary>
+    <div class="api-block">
+      <code>curl https://volusia.zqmlabs.com/api/indicators</code>
+    </div>
+  </details>
+
+  <details>
+    <summary>GET /api/status — System status</summary>
+    <div class="api-block">
+      <code>curl https://volusia.zqmlabs.com/api/status</code>
+    </div>
+  </details>
+
+  <h3>Contribution Types</h3>
+  <ul>
+    <li><code>tool</code> — Software, scripts, data fetchers</li>
+    <li><code>data_source</code> — New public data sources</li>
+    <li><code>analysis</code> — Research or data analysis</li>
+    <li><code>map</code> — Geospatial data and map layers</li>
+    <li><code>report</code> — Reports and briefings</li>
+    <li><code>community</code> — Local knowledge and observations</li>
+    <li><code>social_media</code> — Social media intelligence</li>
+    <li><code>educational</code> — School/college projects</li>
+    <li><code>direct</code> — Strategic feedback and mission input</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Review Process</h2>
+  <ul>
+    <li>All submissions are reviewed by the Project Volusia Governance Board within 5 business days.</li>
+    <li>You will receive an update at your provided email (if any).</li>
+    <li>Approved contributions are integrated into the codebase or knowledge base.</li>
+    <li>You can check status anytime using your submission ID.</li>
+  </ul>
+</section>
+
+<div class="footer">
+  <a href="/">Home</a> &middot;
+  <a href="/projects/">Projects</a> &middot;
+  <a href="/services/">Services</a> &middot;
+  <a href="/contribute/">Contribute</a> &middot;
+  <a href="/contact/">Contact</a> &middot;
+  <a href="mailto:zqmcomputing@gmail.com">zqmcomputing@gmail.com</a> &middot;
+  <a href="https://github.com/ZQM-Labs/project-volusia">GitHub</a>
+</div>
+
+<script>
+const API = 'https://volusia.zqmlabs.com';
+
+async function submitForm(formId, resultId) {
+  const form = document.getElementById(formId);
+  const result = document.getElementById(resultId);
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(form);
+    const type = fd.get('contribution_type');
+    const content = {};
+    for (let [k,v] of fd.entries()) {
+      if (k !== 'contribution_type' && v) content[k] = v;
+    }
+    const payload = {
+      contribution_type: type,
+      content: content,
+      author_name: fd.get('author_name') || '',
+      author_email: fd.get('author_email') || '',
+    };
+    try {
+      const resp = await fetch(`${API}/api/v1/contributions`, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(payload),
+      });
+      const data = await resp.json();
+      result.style.display = 'block';
+      result.className = resp.ok ? 'success' : 'error';
+      result.innerHTML = resp.ok
+        ? `<strong>Thank you!</strong> Your contribution has been received.<br>Submission ID: <code>${data.submission_id}</code><br>Estimated review: ${data.estimated_review_by || 'within 5 business days'}`
+        : `<strong>Error:</strong> ${data.detail || 'Submission failed'}`;
+      if (resp.ok) form.reset();
+    } catch (err) {
+      result.style.display = 'block';
+      result.className = 'error';
+      result.innerHTML = `<strong>Connection error:</strong> Could not reach the server. Please try again later.`;
+    }
+  });
+}
+
+submitForm('form-codebase', 'result-codebase');
+submitForm('form-knowledge', 'result-knowledge');
+submitForm('form-mission', 'result-mission');
+</script>
+</html>
