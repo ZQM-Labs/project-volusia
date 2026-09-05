@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
 """
-Project Volusia — Simple Reverse Proxy Server
-Serves static files from zqmlabs.com/ and proxies API calls to the portal.
-Run as Administrator to bind to port 80.
+Project Volusia — Robust Reverse Proxy Server
+Serves static files and proxies API calls with better error handling.
 
 Usage:
-    sudo python deploy_portal.sh
-    OR
-    python deploy_portal.sh (if already running on port 80)
+    python deploy_portal.py
 """
 
 import http.server
@@ -30,37 +27,44 @@ class ProxyHandler(http.server.SimpleHTTPRequestHandler):
     
     def do_GET(self):
         # API routes → portal
-        if self.path.startswith("/api/") or self.path == "/health":
+        if self.path.startswith("/api/") and not self.path.startswith("/api/v1/"):
             self._proxy_to_portal()
+            return
+        
+        # Contribution API → contribution service
+        if self.path.startswith("/api/v1/"):
+            self._proxy_to_contribute()
             return
         
         # Project Volusia portal page
         if self.path == "/project-volusia" or self.path == "/project-volusia/":
-            # Look in multiple locations
             locations = [
                 STATIC_DIR / "project-volusia.html",
                 Path("Z:/14_Projects/Active/Project-Volusia/project-volusia.html"),
             ]
             for loc in locations:
                 if loc.exists():
-                    self.send_response(200)
-                    self.send_header("Content-Type", "text/html")
-                    with open(loc, "rb") as f:
-                        content = f.read()
-                    self.send_header("Content-Length", str(len(content)))
-                    self.end_headers()
-                    self.wfile.write(content)
+                    self._serve_file_loc(loc)
                     return
-            
-            # Fallback: redirect to /
-            self.send_response(302)
-            self.send_header("Location", "/")
-            self.end_headers()
+            self._send_redirect("/")
+            return
+        
+        # Data explorer
+        if self.path == "/data-explorer" or self.path == "/data-explorer/":
+            self._proxy_to_portal()
             return
         
         # Contribution page
         if self.path == "/contribute" or self.path == "/contribute/":
-            self._serve_file("contribute.html")
+            locations = [
+                STATIC_DIR / "contribute.html",
+                Path("Z:/14_Projects/Active/Project-Volusia/contribute.html"),
+            ]
+            for loc in locations:
+                if loc.exists():
+                    self._serve_file_loc(loc)
+                    return
+            self._send_redirect("/")
             return
         
         # Static files
@@ -75,6 +79,14 @@ class ProxyHandler(http.server.SimpleHTTPRequestHandler):
         # Portal API → portal
         if self.path.startswith("/api/"):
             self._proxy_to_portal()
+            return
+        
+        self.send_error(404, "Not Found")
+    
+    def do_PATCH(self):
+        # Contribution API → contribution service
+        if self.path.startswith("/api/v1/contributions"):
+            self._proxy_to_contribute()
             return
         
         self.send_error(404, "Not Found")
@@ -95,6 +107,18 @@ class ProxyHandler(http.server.SimpleHTTPRequestHandler):
         file_path = STATIC_DIR / path.lstrip("/")
         
         if file_path.exists() and file_path.is_file():
+            self._serve_file_loc(file_path)
+        else:
+            # Fallback to index.html
+            index_path = STATIC_DIR / "index.html"
+            if index_path.exists():
+                self._serve_file_loc(index_path)
+            else:
+                self.send_error(404, "Not Found")
+    
+    def _serve_file_loc(self, file_path):
+        """Serve a specific file."""
+        try:
             self.send_response(200)
             
             # Content type
@@ -110,38 +134,20 @@ class ProxyHandler(http.server.SimpleHTTPRequestHandler):
                 ".ico": "image/x-icon",
             }
             self.send_header("Content-Type", content_types.get(ext, "application/octet-stream"))
-            self.send_header("Content-Length", str(file_path.stat().st_size))
-            self.end_headers()
             
             with open(file_path, "rb") as f:
-                self.wfile.write(f.read())
-        else:
-            # Fallback to index.html for SPA behavior
-            index_path = STATIC_DIR / "index.html"
-            if index_path.exists():
-                self.send_response(200)
-                self.send_header("Content-Type", "text/html")
-                self.end_headers()
-                with open(index_path, "rb") as f:
-                    self.wfile.write(f.read())
-            else:
-                self.send_error(404, "Not Found")
-    
-    def _serve_file(self, filename):
-        """Serve a specific file."""
-        file_path = STATIC_DIR.parent / "Project-Volusia" / filename
-        if not file_path.exists():
-            file_path = STATIC_DIR / filename
-        
-        if file_path.exists():
-            self.send_response(200)
-            self.send_header("Content-Type", "text/html")
-            self.send_header("Content-Length", str(file_path.stat().st_size))
+                content = f.read()
+            self.send_header("Content-Length", str(len(content)))
             self.end_headers()
-            with open(file_path, "rb") as f:
-                self.wfile.write(f.read())
-        else:
-            self.send_error(404, f"{filename} not found")
+            self.wfile.write(content)
+        except Exception as e:
+            self.send_error(500, str(e))
+    
+    def _send_redirect(self, location):
+        """Send a redirect."""
+        self.send_response(302)
+        self.send_header("Location", location)
+        self.end_headers()
     
     def _proxy_to_portal(self):
         """Proxy request to the portal service."""
@@ -156,7 +162,7 @@ class ProxyHandler(http.server.SimpleHTTPRequestHandler):
     def _proxy_request(self, target):
         """Proxy a request to the target URL."""
         try:
-            # Read POST body
+            # Read POST/PATCH body
             content_length = int(self.headers.get("Content-Length", 0))
             body = self.rfile.read(content_length) if content_length > 0 else None
             
@@ -186,12 +192,20 @@ class ProxyHandler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(e.read())
         
-        except Exception as e:
+        except urllib.error.URLError as e:
             self.send_response(502)
             self.send_header("Content-Type", "application/json")
             self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
-            error = json.dumps({"error": "Bad Gateway", "detail": str(e)})
+            error = json.dumps({"error": "Service Unavailable", "detail": str(e)})
+            self.wfile.write(error.encode())
+        
+        except Exception as e:
+            self.send_response(500)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            error = json.dumps({"error": "Internal Server Error", "detail": str(e)})
             self.wfile.write(error.encode())
 
 
@@ -204,8 +218,8 @@ def main():
     print(f"\nAccess points:")
     print(f"  http://localhost/ — Main website")
     print(f"  http://localhost/contribute/ — Contribution page")
-    print(f"  http://localhost/api/health — Health check")
-    print(f"  http://localhost/api/v1/contributions — Contribution API")
+    print(f"  http://localhost/project-volusia — Portal")
+    print(f"  http://localhost/data-explorer — Data Explorer")
     print(f"\nPress Ctrl+C to stop.")
     
     try:

@@ -135,18 +135,26 @@ async def submit_contribution(request: Request):
         )
 
     # Validate content is present and meaningful
-    empty = content is None or (
-        isinstance(content, str) and not content.strip()
-    ) or (
-        isinstance(content, (dict, list)) and len(content) == 0
-    )
-    if empty:
-        raise HTTPException(status_code=400, detail="Content is required and must be non-empty")
+    if content is None:
+        raise HTTPException(status_code=400, detail="Content is required")
+    
+    if isinstance(content, str):
+        if not content.strip():
+            raise HTTPException(status_code=400, detail="Content is required and must be non-empty")
+    elif isinstance(content, dict):
+        if len(content) == 0:
+            raise HTTPException(status_code=400, detail="Content is required and must be non-empty")
+    elif isinstance(content, (list, tuple)):
+        if len(content) == 0:
+            raise HTTPException(status_code=400, detail="Content is required and must be non-empty")
+    else:
+        # Convert to string for storage
+        content = str(content)
 
     # Extract title from content if available
     title = ""
     if isinstance(content, dict):
-        title = content.get("title", content.get("topic", ""))
+        title = content.get("title", content.get("topic", content.get("subject", "")))
         # Flatten content for storage
         content = json.dumps(content)
     elif isinstance(content, str):
