@@ -36,7 +36,26 @@ class ProxyHandler(http.server.SimpleHTTPRequestHandler):
         
         # Project Volusia portal page
         if self.path == "/project-volusia" or self.path == "/project-volusia/":
-            self._serve_file("project-volusia.html")
+            # Look in multiple locations
+            locations = [
+                STATIC_DIR / "project-volusia.html",
+                Path("Z:/14_Projects/Active/Project-Volusia/project-volusia.html"),
+            ]
+            for loc in locations:
+                if loc.exists():
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/html")
+                    with open(loc, "rb") as f:
+                        content = f.read()
+                    self.send_header("Content-Length", str(len(content)))
+                    self.end_headers()
+                    self.wfile.write(content)
+                    return
+            
+            # Fallback: redirect to /
+            self.send_response(302)
+            self.send_header("Location", "/")
+            self.end_headers()
             return
         
         # Contribution page

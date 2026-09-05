@@ -340,12 +340,168 @@ def contribute_page():
     return HTMLResponse("<html><body><h1>Contribute</h1><p>Contribution form loading...</p></body></html>")
 
 
+@app.get("/data-explorer", response_class=HTMLResponse)
+def data_explorer():
+    """Interactive data explorer with filtering."""
+    explorer_html = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Explorer — Project Volusia</title>
+  <style>
+    :root { --bg:#0f172a; --ink:#e2e8f0; --muted:#94a3b8; --accent:#38bdf8; --card:#1e293b; --border:#334155; --green:#10b981; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: var(--bg); color: var(--ink); line-height:1.6; }
+    header { border-bottom: 1px solid var(--border); }
+    .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+    .nav { display:flex; justify-content:space-between; align-items:center; }
+    .logo { font-weight:800; letter-spacing:-0.02em; font-size:18px; color: var(--accent); text-decoration: none; }
+    .nav a { color: var(--ink); text-decoration:none; font-weight:500; padding:6px 10px; border-radius:6px; margin-left: 4px; }
+    .nav a:hover { background:#334155; color: var(--accent); }
+    section { padding: 32px 20px; }
+    .filters { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+    .filter-group { display: flex; flex-direction: column; }
+    label { font-size: 12px; color: var(--muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+    select, input { padding: 8px 12px; background: var(--card); color: var(--ink); border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
+    table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 10px; overflow: hidden; }
+    th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border); }
+    th { background: #0f172a; color: var(--muted); font-size: 12px; text-transform: uppercase; }
+    tr:hover { background: #334155; }
+    .chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-top: 20px; }
+    .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px; text-align: center; }
+    .chart-card img { max-width: 100%; height: auto; border-radius: 6px; }
+    h1 { font-size: 28px; margin: 0 0 8px; }
+    .subtitle { color: var(--muted); margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container nav">
+      <a href="/" class="logo">Project Volusia</a>
+      <div>
+        <a href="/">Home</a>
+        <a href="/project-volusia">Portal</a>
+        <a href="/contribute/">Contribute</a>
+        <a href="/data-explorer">Data Explorer</a>
+      </div>
+    </div>
+  </header>
+  <section>
+    <div class="container">
+      <h1>Data Explorer</h1>
+      <p class="subtitle">Filter and explore all Project Volusia indicators. Data from public U.S. government sources.</p>
+      
+      <div class="filters">
+        <div class="filter-group">
+          <label>Category</label>
+          <select id="filter-category"><option value="">All</option></select>
+        </div>
+        <div class="filter-group">
+          <label>Source</label>
+          <select id="filter-source"><option value="">All</option></select>
+        </div>
+        <div class="filter-group">
+          <label>Search</label>
+          <input type="text" id="filter-search" placeholder="Filter indicators...">
+        </div>
+      </div>
+      
+      <table id="indicators-table">
+        <thead>
+          <tr><th>Indicator</th><th>Value</th><th>Unit</th><th>Category</th><th>Source</th><th>Vintage</th><th>Updated</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      
+      <h2 style="margin-top: 32px;">Charts</h2>
+      <div class="chart-grid">
+        <div class="chart-card">
+          <img src="/api/chart/population_trend.png" alt="Population Trend">
+          <div style="font-size: 12px; color: var(--muted); margin-top: 8px;">Population Trend</div>
+        </div>
+        <div class="chart-card">
+          <img src="/api/chart/employment_overview.png" alt="Employment Overview">
+          <div style="font-size: 12px; color: var(--muted); margin-top: 8px;">Employment Overview</div>
+        </div>
+        <div class="chart-card">
+          <img src="/api/chart/climate_summary.png" alt="Climate Summary">
+          <div style="font-size: 12px; color: var(--muted); margin-top: 8px;">Climate Summary</div>
+        </div>
+        <div class="chart-card">
+          <img src="/api/chart/unemployment_trend.png" alt="Unemployment Trend">
+          <div style="font-size: 12px; color: var(--muted); margin-top: 8px;">Unemployment Trend</div>
+        </div>
+        <div class="chart-card">
+          <img src="/api/chart/wage_trend.png" alt="Wage Trend">
+          <div style="font-size: 12px; color: var(--muted); margin-top: 8px;">Wage Trend</div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <script>
+    let allIndicators = [];
+    
+    async function loadIndicators() {
+      const resp = await fetch('/api/indicators');
+      const data = await resp.json();
+      allIndicators = data.indicators;
+      
+      // Populate filters
+      const categories = [...new Set(allIndicators.map(i => i.category))];
+      const sources = [...new Set(allIndicators.map(i => i.source))];
+      
+      document.getElementById('filter-category').innerHTML += 
+        categories.map(c => '<option value="' + c + '">' + c + '</option>').join('');
+      document.getElementById('filter-source').innerHTML += 
+        sources.map(s => '<option value="' + s + '">' + s + '</option>').join('');
+      
+      renderTable(allIndicators);
+    }
+    
+    function renderTable(indicators) {
+      const tbody = document.querySelector('#indicators-table tbody');
+      tbody.innerHTML = indicators.map(i => 
+        '<tr><td>' + i.name + '</td><td><strong>' + i.value + '</strong></td><td>' + i.unit + '</td><td>' + i.category + '</td><td>' + i.source + '</td><td>' + i.vintage + '</td><td>' + (i.fetched_at ? i.fetched_at.slice(0, 10) : 'N/A') + '</td></tr>'
+      ).join('');
+    }
+    
+    function applyFilters() {
+      const cat = document.getElementById('filter-category').value;
+      const src = document.getElementById('filter-source').value;
+      const search = document.getElementById('filter-search').value.toLowerCase();
+      
+      let filtered = allIndicators;
+      if (cat) filtered = filtered.filter(i => i.category === cat);
+      if (src) filtered = filtered.filter(i => i.source === src);
+      if (search) filtered = filtered.filter(i => i.name.toLowerCase().includes(search));
+      
+      renderTable(filtered);
+    }
+    
+    document.getElementById('filter-category').addEventListener('change', applyFilters);
+    document.getElementById('filter-source').addEventListener('change', applyFilters);
+    document.getElementById('filter-search').addEventListener('input', applyFilters);
+    
+    loadIndicators();
+  </script>
+</body>
+</html>"""
+    return HTMLResponse(explorer_html)
+
+
 @app.get("/project-volusia", response_class=HTMLResponse)
 def project_volusia_portal():
     """Serve the Project Volusia portal page."""
-    portal_html = Path(__file__).resolve().parent.parent.parent / "project-volusia.html"
-    if portal_html.exists():
-        return HTMLResponse(portal_html.read_text(encoding="utf-8"))
+    locations = [
+        Path(__file__).resolve().parent / "portal" / "project-volusia.html",
+        Path("Z:/zqm-garden-03/web/zqmlabs.com/project-volusia.html"),
+        Path("Z:/14_Projects/Active/Project-Volusia/project-volusia.html"),
+    ]
+    for loc in locations:
+        if loc.exists():
+            return HTMLResponse(loc.read_text(encoding="utf-8"))
     return HTMLResponse("""<html><head><meta http-equiv="refresh" content="0; url=/"></head>
 <body><p>Redirecting to <a href="/">Project Volusia Portal</a>...</p></body></html>""")
 
