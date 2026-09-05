@@ -27,6 +27,7 @@ ENDPOINTS = [
     ("/contribute/", "text/html"),
     ("/project-volusia", "text/html"),
     ("/data-explorer", "text/html"),
+    ("/dashboard", "text/html"),
     ("/api/health", "application/json"),
     ("/api/status", "application/json"),
     ("/api/indicators", "application/json"),

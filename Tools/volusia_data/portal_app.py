@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Project Volusia — Standalone Portal
+Project Volusia - Standalone Portal
 Serves HTML dashboard + JSON APIs from SQLite.
 
 Coherence-aware: surfaces source disagreements, vintage differences,
@@ -21,7 +21,7 @@ from pathlib import Path
 
 # --- Force clean import (script mode only) ---
 # P1-023 fix: this used to run unconditionally at module level, deleting this
-# module's OWN sys.modules entry while it was still executing — so ANY import
+# module's OWN sys.modules entry while it was still executing - so ANY import
 # of volusia_data.portal_app died with KeyError at importlib finalization
 # (script runs were unaffected because the module registers as "__main__").
 # Guarded to script mode to preserve the original flush intent.
@@ -33,7 +33,7 @@ if __name__ == "__main__":
 from fastapi import FastAPI, Response
 from fastapi.responses import HTMLResponse, StreamingResponse
 
-app = FastAPI(title="Project Volusia — Open Data Portal")
+app = FastAPI(title="Project Volusia - Open Data Portal")
 
 # DB path
 DB_PATH = Path(
@@ -145,7 +145,7 @@ COHERENCE_GROUPS = {
         "note": (
             "QCEW employment counts jobs at establishments. "
             "BLS LAUS unemployment rate measures labor force status of residents. "
-            "These measure different things — don't divide one by the other."
+            "These measure different things - don't divide one by the other."
         ),
     },
 }
@@ -233,7 +233,7 @@ def index():
     disagreements = _get_coherence_disagreements()
 
     html_parts = [
-        "<html><head><title>Project Volusia — Open Data Portal</title>",
+        "<html><head><title>Project Volusia - Open Data Portal</title>",
         CSS_STYLE,
         "</head><body>",
         '<div class="header">',
@@ -340,6 +340,15 @@ def contribute_page():
     return HTMLResponse("<html><body><h1>Contribute</h1><p>Contribution form loading...</p></body></html>")
 
 
+@app.get("/dashboard", response_class=HTMLResponse)
+def dashboard():
+    """Executive dashboard with live KPIs and charts."""
+    dashboard_path = Path("Z:/14_Projects/Active/Project-Volusia/dashboard.html")
+    if dashboard_path.exists():
+        return HTMLResponse(dashboard_path.read_text(encoding="utf-8"))
+    return HTMLResponse("<html><body><h1>Dashboard</h1><p>Loading...</p></body></html>")
+
+
 @app.get("/data-explorer", response_class=HTMLResponse)
 def data_explorer():
     """Interactive data explorer with filtering."""
@@ -349,7 +358,7 @@ def data_explorer():
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Data Explorer — Project Volusia</title>
+  <title>Data Explorer - Project Volusia</title>
   <style>
     :root { --bg:#0f172a; --ink:#e2e8f0; --muted:#94a3b8; --accent:#38bdf8; --card:#1e293b; --border:#334155; --green:#10b981; }
     * { box-sizing: border-box; }
