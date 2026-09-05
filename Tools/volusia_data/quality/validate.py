@@ -39,6 +39,34 @@ RULES = {
     "median_home_value": {"min": 100000, "max": 600000, "type": "currency"},
     "median_gross_rent": {"min": 500, "max": 3000, "type": "currency"},
     "building_permits_2025": {"min": 1000, "max": 10000, "type": "count"},
+
+    "crime_rate_per_100k": {"min": 500, "max": 5000, "type": "count"},
+    "safety_score": {"min": 0, "max": 100, "type": "score"},
+    "vcso_arrests_daily_avg": {"min": 1, "max": 50, "type": "count"},
+    "spotcrime_monthly_avg": {"min": 1, "max": 50, "type": "count"},
+    "school_district_grade": {"min": 0, "max": 0, "type": "skip"},
+    "schools_a_grade": {"min": 0, "max": 100, "type": "count"},
+    "schools_ab_grade_pct": {"min": 0, "max": 100, "type": "percentage"},
+    "schools_df_grade": {"min": 0, "max": 20, "type": "count"},
+    "ela_proficiency": {"min": 0, "max": 100, "type": "percentage"},
+    "math_proficiency": {"min": 0, "max": 100, "type": "percentage"},
+    "algebra1_proficiency": {"min": 0, "max": 100, "type": "percentage"},
+    "geometry_proficiency": {"min": 0, "max": 100, "type": "percentage"},
+    "biology_proficiency": {"min": 0, "max": 100, "type": "percentage"},
+    "us_history_proficiency": {"min": 0, "max": 100, "type": "percentage"},
+    "civics_proficiency": {"min": 0, "max": 100, "type": "percentage"},
+    "major_employers_count": {"min": 1, "max": 200, "type": "count"},
+    "edc_investment_millions": {"min": 1, "max": 1000, "type": "count"},
+    "target_industries": {"min": 1, "max": 20, "type": "count"},
+    "opendata_portals": {"min": 1, "max": 10, "type": "count"},
+    "gis_data_layers": {"min": 10, "max": 200, "type": "count"},
+    "parcel_count": {"min": 100000, "max": 500000, "type": "count"},
+    "median_home_price_zillow": {"min": 100000, "max": 600000, "type": "currency"},
+    "avg_household_size": {"min": 1, "max": 5, "type": "count"},
+    "persons_per_household": {"min": 1, "max": 5, "type": "count"},
+    "mean_commute_time": {"min": 10, "max": 60, "type": "time"},
+    "business_resources_providers": {"min": 1, "max": 50, "type": "count"},
+
     "high_school_grad_rate": {"min": 70, "max": 100, "type": "percentage"},
     "bachelors_degree_rate": {"min": 10, "max": 60, "type": "percentage"},
     "civilian_labor_force_rate": {"min": 30, "max": 80, "type": "percentage"},
@@ -94,6 +122,10 @@ def validate_range(conn):
     rows = conn.execute("SELECT name, value FROM indicators").fetchall()
     
     for name, value in rows:
+        if name in RULES and RULES[name].get("type") == "skip":
+            results.append({"indicator": name, "status": "OK", "message": "Skipped (non-numeric)"})
+            continue
+        
         try:
             val = float(value)
         except (ValueError, TypeError):

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OSINT Recon — Project Volusia</title>
+  <style>
+    :root { --bg:#0f172a; --ink:#e2e8f0; --muted:#94a3b8; --accent:#38bdf8; --card:#1e293b; --border:#334155; --green:#10b981; --yellow:#f59e0b; --red:#ef4444; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: var(--bg); color: var(--ink); line-height:1.6; }
+    header { border-bottom: 1px solid var(--border); }
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    .nav { display:flex; justify-content:space-between; align-items:center; }
+    .logo { font-weight:800; letter-spacing:-0.02em; font-size:18px; color: var(--accent); text-decoration: none; }
+    .nav a { color: var(--ink); text-decoration:none; font-weight:500; padding:6px 10px; border-radius:6px; margin-left: 4px; }
+    .nav a:hover { background:#334155; color: var(--accent); }
+    .hero { padding: 40px 20px; }
+    h1 { font-size: 32px; margin: 0 0 8px; }
+    .subtitle { color: var(--muted); margin-bottom: 20px; }
+    .stats { display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin: 24px 0; }
+    .stat { background: var(--card); border:1px solid var(--border); border-radius: 12px; padding: 20px; text-align: center; }
+    .stat-value { font-size: 24px; font-weight: 700; color: var(--accent); }
+    .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px; }
+    .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin: 24px 0; }
+    .card { background: var(--card); border:1px solid var(--border); border-radius: 12px; padding: 20px; }
+    .card h3 { margin: 0 0 12px; font-size: 16px; }
+    .card p { margin: 0; font-size: 13px; color: var(--muted); }
+    table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
+    th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+    th { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; background: #0f172a; }
+    footer { border-top:1px solid var(--border); color: var(--muted); font-size:13px; padding: 20px; text-align: center; margin-top: 40px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container nav">
+      <a href="/" class="logo">Project Volusia</a>
+      <div>
+        <a href="/dashboard">Dashboard</a>
+        <a href="/data-explorer">Data</a>
+        <a href="/osint-recon">OSINT Recon</a>
+        <a href="/contribute/">Contribute</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="hero">
+    <h1>OSINT Recon</h1>
+    <p class="subtitle">Open-source intelligence gathering for Volusia County, Florida. All data sourced from public records, government APIs, and verified open-data portals.</p>
+  </div>
+
+  <section>
+    <div class="container">
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-value">70</div>
+          <div class="stat-label">Indicators Tracked</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">9</div>
+          <div class="stat-label">Categories</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">15+</div>
+          <div class="stat-label">Data Sources</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">89</div>
+          <div class="stat-label">Quality Checks</div>
+        </div>
+      </div>
+
+      <h2>New Categories (OSINT)</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>Public Safety</h3>
+          <p>Crime rates, safety scores, arrest statistics from VCSO daily reports and FDLE UCR data.</p>
+          <ul style="margin: 8px 0 0; padding-left: 20px; font-size: 12px; color: var(--muted);">
+            <li>Crime rate per 100K: 1,594</li>
+            <li>Safety score: 32/100</li>
+            <li>Daily arrests avg: 15/day</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Education Performance</h3>
+          <p>School district grades, proficiency rates, and assessment results from FL DOE.</p>
+          <ul style="margin: 8px 0 0; padding-left: 20px; font-size: 12px; color: var(--muted);">
+            <li>District grade: A (2nd consecutive)</li>
+            <li>A-rated schools: 37</li>
+            <li>Geometry proficiency: 96%</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Government Transparency</h3>
+          <p>Open data portals, GIS layers, and public records availability.</p>
+          <ul style="margin: 8px 0 0; padding-left: 20px; font-size: 12px; color: var(--muted);">
+            <li>Open data portals: 3</li>
+            <li>GIS data layers: 50+</li>
+            <li>Parcels tracked: 250K</li>
+          </ul>
+        </div>
+      </div>
+
+      <h2>Data Sources</h2>
+      <table>
+        <thead>
+          <tr><th>Source</th><th>Category</th><th>URL</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>U.S. Census QuickFacts</td><td>Demographics, Economy</td><td>census.gov/quickfacts</td></tr>
+          <tr><td>Volusia County Sheriff</td><td>Public Safety</td><td>volusiasheriff.gov</td></tr>
+          <tr><td>FL DOE</td><td>Education</td><td>vcsedu.org</td></tr>
+          <tr><td>Volusia County EDC</td><td>Economy</td><td>volusiabusiness.org</td></tr>
+          <tr><td>Volusia County Open Data</td><td>Government</td><td>opendata-volusiacountyfl.harc.arcgis.com</td></tr>
+          <tr><td>FDLE UCR</td><td>Public Safety</td><td>fdle.state.fl.us/CJAB/UCR</td></tr>
+          <tr><td>SpotCrime</td><td>Public Safety</td><td>spotcrime.com/FL/Volusia</td></tr>
+          <tr><td>CrimeByCounty</td><td>Public Safety</td><td>crimebycounty.com/florida/volusia-county</td></tr>
+          <tr><td>Volusia Property Appraiser</td><td>Housing, Government</td><td>vcpa.vcgov.org</td></tr>
+          <tr><td>Census ACS 5-Year</td><td>Demographics, Economy</td><td>data.census.gov</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      &copy; ZQM Labs — Project Volusia. Open-source intelligence from public records and government APIs.
+    </div>
+  </footer>
+</body>
+</html>

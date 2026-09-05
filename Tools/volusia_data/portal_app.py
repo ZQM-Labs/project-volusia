@@ -947,6 +947,19 @@ def chart_education_health():
     return _chart_response(fig)
 
 
+@app.get("/osint-recon", response_class=HTMLResponse)
+def osint_recon():
+    """OSINT Recon page with data sources and indicators."""
+    locations = [
+        Path("Z:/14_Projects/Active/Project-Volusia/osint-recon.html"),
+        Path("Z:/zqm-garden-03/web/zqmlabs.com/osint-recon.html"),
+    ]
+    for loc in locations:
+        if loc.exists():
+            return HTMLResponse(loc.read_text(encoding="utf-8"))
+    return HTMLResponse("<html><body><h1>OSINT Recon</h1></body></html>")
+
+
 @app.get("/api/coherence")
 def api_coherence():
     disagreements = _get_coherence_disagreements()
