@@ -37,6 +37,10 @@ ENDPOINTS = [
     ("/api/chart/climate_summary.png", "image/png"),
     ("/api/chart/unemployment_trend.png", "image/png"),
     ("/api/chart/wage_trend.png", "image/png"),
+    ("/api/chart/income_overview.png", "image/png"),
+    ("/api/chart/housing_overview.png", "image/png"),
+    ("/api/chart/demographics.png", "image/png"),
+    ("/api/chart/education_health.png", "image/png"),
 ]
 
 

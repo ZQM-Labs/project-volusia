@@ -1,0 +1,22 @@
+# Project Volusia - Cloudflared Tunnel Configuration
+# Place this file at: C:\Users\zqmco\.cloudflared\config.yml
+# Or run: cloudflared tunnel --config C:\Users\zqmco\.cloudflared\config.yml
+
+tunnel: volusia
+credentials-file: C:\Users\zqmco\.cloudflared\volusia.json
+
+ingress:
+  # Portal website
+  - hostname: volusia.zqmlabs.com
+    service: http://localhost:80
+    originRequest:
+      noTLSVerify: true
+  
+  # Main website (optional - if you want zqmlabs.com to show Volusia)
+  # - hostname: zqmlabs.com
+  #   service: http://localhost:80
+  #   originRequest:
+  #     noTLSVerify: true
+
+  # Catch-all
+  - service: http://localhost:80

@@ -763,6 +763,190 @@ def chart_climate_summary():
     return _chart_response(fig)
 
 
+@app.get("/api/chart/income_overview.png")
+def chart_income_overview():
+    """Bar chart: income, poverty, and related economic indicators."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    indicators = [
+        "median_household_income", "per_capita_income_census", "poverty_rate"
+    ]
+    rows = _db_rows(
+        "SELECT name, value, unit FROM indicators WHERE name IN ({})".format(
+            ",".join("?" for _ in indicators)
+        ), indicators
+    )
+    
+    if not rows:
+        return _chart_no_data_response("No income data available.")
+    
+    labels = []
+    values = []
+    for r in rows:
+        label = r["name"].replace("_", " ").replace("census", "").title()
+        try:
+            val = float(r["value"])
+        except (ValueError, TypeError):
+            continue
+        labels.append(label)
+        values.append(val)
+
+    if not labels:
+        return _chart_no_data_response("No income data available.")
+
+    fig, ax = plt.subplots(figsize=(10, 5))
+    colors = ["#10b981", "#38bdf8", "#f59e0b"]
+    bars = ax.bar(labels, values, color=colors[: len(labels)])
+    ax.set_title("Volusia County Income & Economic Indicators (ACS 2020-2024)")
+    ax.set_ylabel("Value")
+    ax.grid(True, alpha=0.3, axis="y")
+    for bar, val in zip(bars, values):
+        prefix = "$" if val > 100 else ""
+        suffix = "%" if val < 30 else ""
+        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height(),
+                f"{prefix}{val:,.0f}{suffix}", ha="center", va="bottom", fontsize=9)
+    fig.tight_layout()
+    return _chart_response(fig)
+
+
+@app.get("/api/chart/housing_overview.png")
+def chart_housing_overview():
+    """Bar chart: housing indicators."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    indicators = [
+        "median_home_value", "median_gross_rent", "building_permits_2025", "owner_occupied_rate"
+    ]
+    rows = _db_rows(
+        "SELECT name, value, unit FROM indicators WHERE name IN ({})".format(
+            ",".join("?" for _ in indicators)
+        ), indicators
+    )
+    
+    if not rows:
+        return _chart_no_data_response("No housing data available.")
+    
+    labels = []
+    values = []
+    for r in rows:
+        label = r["name"].replace("_2025", "").replace("_", " ").title()
+        try:
+            val = float(r["value"])
+        except (ValueError, TypeError):
+            continue
+        labels.append(label)
+        values.append(val)
+
+    if not labels:
+        return _chart_no_data_response("No housing data available.")
+
+    fig, ax = plt.subplots(figsize=(10, 5))
+    colors = ["#059669", "#10b981", "#38bdf8", "#8b5cf6"]
+    bars = ax.bar(labels, values, color=colors[: len(labels)])
+    ax.set_title("Volusia County Housing Indicators (ACS 2020-2024)")
+    ax.set_ylabel("Value")
+    ax.grid(True, alpha=0.3, axis="y")
+    for bar, val in zip(bars, values):
+        prefix = "$" if val > 1000 else ""
+        suffix = "%" if val < 100 else ""
+        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height(),
+                f"{prefix}{val:,.0f}{suffix}", ha="center", va="bottom", fontsize=9)
+    fig.tight_layout()
+    return _chart_response(fig)
+
+
+@app.get("/api/chart/demographics.png")
+def chart_demographics():
+    """Pie chart: racial demographics."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    indicators = ["white_alone", "black_alone", "asian_alone", "hispanic_latino"]
+    rows = _db_rows(
+        "SELECT name, value FROM indicators WHERE name IN ({})".format(
+            ",".join("?" for _ in indicators)
+        ), indicators
+    )
+    
+    if not rows:
+        return _chart_no_data_response("No demographic data available.")
+    
+    labels = []
+    values = []
+    for r in rows:
+        label = r["name"].replace("_alone", "").replace("_", " ").title()
+        try:
+            val = float(r["value"])
+        except (ValueError, TypeError):
+            continue
+        labels.append(label)
+        values.append(val)
+
+    if not labels:
+        return _chart_no_data_response("No demographic data available.")
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+    colors = ["#1e3a5f", "#059669", "#f59e0b", "#8b5cf6"]
+    wedges, texts, autotexts = ax.pie(
+        values, labels=labels, autopct='%1.1f%%', colors=colors[: len(labels)],
+        startangle=90
+    )
+    ax.set_title("Volusia County Racial Demographics (ACS 2020-2024)")
+    fig.tight_layout()
+    return _chart_response(fig)
+
+
+@app.get("/api/chart/education_health.png")
+def chart_education_health():
+    """Bar chart: education and health indicators."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    indicators = [
+        "high_school_grad_rate", "bachelors_degree_rate", "uninsured_rate", "disability_rate"
+    ]
+    rows = _db_rows(
+        "SELECT name, value, unit FROM indicators WHERE name IN ({})".format(
+            ",".join("?" for _ in indicators)
+        ), indicators
+    )
+    
+    if not rows:
+        return _chart_no_data_response("No education/health data available.")
+    
+    labels = []
+    values = []
+    for r in rows:
+        label = r["name"].replace("_rate", "").replace("_", " ").title()
+        try:
+            val = float(r["value"])
+        except (ValueError, TypeError):
+            continue
+        labels.append(label)
+        values.append(val)
+
+    if not labels:
+        return _chart_no_data_response("No education/health data available.")
+
+    fig, ax = plt.subplots(figsize=(10, 5))
+    colors = ["#10b981", "#38bdf8", "#ef4444", "#f59e0b"]
+    bars = ax.bar(labels, values, color=colors[: len(labels)])
+    ax.set_title("Volusia County Education & Health (ACS 2020-2024)")
+    ax.set_ylabel("Percent (%)")
+    ax.grid(True, alpha=0.3, axis="y")
+    for bar, val in zip(bars, values):
+        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height(),
+                f"{val:.1f}%", ha="center", va="bottom", fontsize=9)
+    fig.tight_layout()
+    return _chart_response(fig)
+
+
 @app.get("/api/coherence")
 def api_coherence():
     disagreements = _get_coherence_disagreements()
