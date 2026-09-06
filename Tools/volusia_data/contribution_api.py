@@ -147,6 +147,32 @@ async def submit_contribution(request: Request):
     elif isinstance(content, (list, tuple)):
         if len(content) == 0:
             raise HTTPException(status_code=400, detail="Content is required and must be non-empty")
+
+    # Additional validation for data_source type
+    if contribution_type == "data_source":
+        if isinstance(content, dict):
+            # Validate required fields for data_source
+            required_fields = ["title", "source_url"]
+            missing = [f for f in required_fields if f not in content]
+            if missing:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"data_source contributions require: {', '.join(missing)}"
+                )
+            # Validate URL format
+            source_url = content.get("source_url", "")
+            if not source_url.startswith(("http://", "https://")):
+                raise HTTPException(
+                    status_code=400,
+                    detail="source_url must be a valid HTTP(S) URL"
+                )
+            # Validate vintage if provided
+            vintage = content.get("vintage", "")
+            if vintage and not isinstance(vintage, (str, int)):
+                raise HTTPException(
+                    status_code=400,
+                    detail="vintage must be a string (e.g., '2024') or integer"
+                )
     else:
         # Convert to string for storage
         content = str(content)
