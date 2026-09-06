@@ -256,35 +256,43 @@ def generate_report():
     range_results = validate_range(conn)
     freshness_results = validate_freshness(conn)
     
-    # Import citation validation
-    from quality.citations import validate_citation_completeness, validate_attribution_quality
-    
+    # Inline citation validation
     citation_results = []
     rows = conn.execute("SELECT * FROM indicators ORDER BY category, name").fetchall()
     for row in rows:
         row_dict = dict(row)
-        comp_score, comp_issues = validate_citation_completeness(row_dict)
-        attr_score, attr_issues = validate_attribution_quality(row_dict)
+        name = row_dict.get("name", "")
+        source = row_dict.get("source", "")
         url = row_dict.get("source_url", "")
-        if url:
-            from quality.citations import validate_url_format
-            url_valid, url_score, url_issues = validate_url_format(url)
-        else:
-            url_score = 0
-            url_issues = ["No URL"]
+        vintage = row_dict.get("vintage", "")
+        description = row_dict.get("description", "")
         
-        overall = comp_score * 0.5 + attr_score * 0.3 + url_score * 0.2
+        score = 100
+        issues = []
+        
+        if not source:
+            score -= 30
+            issues.append("Missing source")
+        if not url:
+            score -= 30
+            issues.append("Missing URL")
+        elif not url.startswith(("http://", "https://")):
+            score -= 10
+            issues.append("Invalid URL format")
+        if not vintage:
+            score -= 15
+            issues.append("Missing vintage")
+        if not description or len(description) < 10:
+            score -= 10
+            issues.append("Missing/short description")
         
         citation_results.append({
-            "indicator": row_dict.get("name", ""),
-            "source": row_dict.get("source", ""),
+            "indicator": name,
+            "source": source,
             "url": url,
-            "vintage": row_dict.get("vintage", ""),
-            "completeness": comp_score,
-            "attribution": attr_score,
-            "url_score": url_score,
-            "overall": round(overall, 1),
-            "issues": comp_issues + attr_issues + url_issues,
+            "vintage": vintage,
+            "score": max(0, score),
+            "issues": issues,
         })
     
     all_checks = range_results + freshness_results
