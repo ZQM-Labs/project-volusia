@@ -290,8 +290,8 @@ async def status() -> JSONResponse:
     latest_fetch = _db_single("SELECT fetched_at FROM indicators ORDER BY fetched_at DESC LIMIT 1")
     
     sla_met = False
-        last_refresh_days = None
-        if latest_fetch and latest_fetch.get("fetched_at"):
+    last_refresh_days = None
+    if latest_fetch and latest_fetch.get("fetched_at"):
             try:
                 fetched_at = datetime.fromisoformat(latest_fetch["fetched_at"].replace("Z", "+00:00"))
                 age_days = (datetime.now(timezone.utc) - fetched_at).total_seconds() / 86400
@@ -300,7 +300,7 @@ async def status() -> JSONResponse:
             except (ValueError, TypeError):
                 pass
 
-        return JSONResponse({
+    return JSONResponse({
             "database": {
                 "exists": db_exists,
                 "path": str(DB_PATH),
@@ -363,14 +363,150 @@ async def export_json() -> JSONResponse:
 
 
 @app.get("/api/chart/{name}")
-async def get_chart(name: str) -> HTMLResponse:
-    """Serve pre-generated chart images."""
-    chart_path = Path(__file__).resolve().parent.parent.parent / "Media" / f"{name}.png"
+async def get_chart(name: str):
+    """Generate chart images dynamically."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    import io
     
-    if chart_path.exists():
-        return HTMLResponse(f'<img src="/Media/{name}.png" style="max-width:100%; height:auto;" />', media_type="text/html")
+    # Remove .png extension if provided
+    chart_name = name.replace(".png", "")
     
-    return HTMLResponse(f"<html><body><h1>Chart not found: {name}</h1></body></html>", status_code=404)
+    conn = sqlite3.connect(str(DB_PATH))
+    conn.row_factory = sqlite3.Row
+    
+    fig, ax = plt.subplots(figsize=(10, 6))
+    
+    if chart_name == "population_trend":
+        rows = conn.execute("SELECT * FROM indicators WHERE name LIKE 'total_population_pep_%' ORDER BY vintage").fetchall()
+        if rows:
+            ax.bar([r["vintage"] for r in rows], [float(r["value"]) for r in rows], color="#38bdf8")
+            ax.set_title("Population Trend")
+            ax.set_ylabel("Population")
+        else:
+            ax.text(0.5, 0.5, "No data", ha="center", va="center")
+    
+    elif chart_name == "employment_overview":
+        rows = conn.execute("SELECT * FROM indicators WHERE category = 'Economy' AND (name LIKE '%employment%' OR name LIKE '%establishments%') ORDER BY name").fetchall()
+        if rows:
+            ax.barh([r["name"][:20] for r in rows[:10] if r["value"].isdigit()], [float(r["value"]) for r in rows[:10] if r["value"].isdigit()], color="#10b981")
+            ax.set_title("Employment Overview")
+        else:
+            ax.text(0.5, 0.5, "No data", ha="center", va="center")
+    
+    elif chart_name == "climate_summary":
+        rows = conn.execute("SELECT * FROM indicators WHERE category = 'Climate' ORDER BY name").fetchall()
+        if rows:
+            values = [float(r["value"]) for r in rows if r["value"].replace(".", "").replace("-", "").isdigit()][:10]
+            labels = [r["name"][:15] for r in rows][:len(values)]
+            ax.bar(labels, values, color="#f59e0b")
+            ax.set_title("Climate Summary")
+            ax.tick_params(axis="x", rotation=45)
+        else:
+            ax.text(0.5, 0.5, "No data", ha="center", va="center")
+    
+    elif chart_name == "unemployment_trend":
+        rows = conn.execute("SELECT * FROM indicators WHERE name LIKE '%unemployment%' ORDER BY vintage").fetchall()
+        if rows:
+            ax.plot([r["vintage"] for r in rows], [float(r["value"]) for r in rows], marker="o", color="#ef4444")
+            ax.set_title("Unemployment Trend")
+            ax.set_ylabel("Rate (%)")
+        else:
+            ax.text(0.5, 0.5, "No data", ha="center", va="center")
+    
+    elif chart_name == "wage_trend":
+        rows = conn.execute("SELECT * FROM indicators WHERE name LIKE '%wage%' ORDER BY vintage").fetchall()
+        if rows:
+            ax.plot([r["vintage"] for r in rows], [float(r["value"]) for r in rows], marker="s", color="#38bdf8")
+            ax.set_title("Wage Trend")
+            ax.set_ylabel("Weekly Wage ($)")
+        else:
+            ax.text(0.5, 0.5, "No data", ha="center", va="center")
+    
+    elif chart_name == "income_overview":
+        rows = conn.execute("SELECT * FROM indicators WHERE name LIKE '%income%' ORDER BY name").fetchall()
+        if rows:
+            values = [float(r["value"]) for r in rows if r["value"].isdigit()][:10]
+            labels = [r["name"][:15] for r in rows][:len(values)]
+            ax.barh(labels, values, color="#10b981")
+            ax.set_title("Income Overview")
+        else:
+            ax.text(0.5, 0.5, "No data", ha="center", va="center")
+    
+    elif chart_name == "housing_overview":
+        rows = conn.execute("SELECT * FROM indicators WHERE category = 'Housing' ORDER BY name").fetchall()
+        if rows:
+            values = [float(r["value"]) for r in rows if r["value"].isdigit()][:10]
+            labels = [r["name"][:15] for r in rows][:len(values)]
+            ax.barh(labels, values, color="#f59e0b")
+            ax.set_title("Housing Overview")
+        else:
+            ax.text(0.5, 0.5, "No data", ha="center", va="center")
+    
+    elif chart_name == "demographics":
+        rows = conn.execute("SELECT * FROM indicators WHERE category = 'Demographics' ORDER BY name").fetchall()
+        if rows:
+            values = [float(r["value"]) for r in rows if r["value"].isdigit()][:10]
+            labels = [r["name"][:15] for r in rows][:len(values)]
+            ax.bar(labels, values, color="#38bdf8")
+            ax.set_title("Demographics")
+            ax.tick_params(axis="x", rotation=45)
+        else:
+            ax.text(0.5, 0.5, "No data", ha="center", va="center")
+    
+    elif chart_name == "education_health":
+        rows = conn.execute("SELECT * FROM indicators WHERE category IN ('Education', 'Health') ORDER BY category, name").fetchall()
+        if rows:
+            values = [float(r["value"]) for r in rows if r["value"].isdigit()][:10]
+            labels = [r["name"][:15] for r in rows][:len(values)]
+            ax.bar(labels, values, color="#a855f7")
+            ax.set_title("Education & Health")
+            ax.tick_params(axis="x", rotation=45)
+        else:
+            ax.text(0.5, 0.5, "No data", ha="center", va="center")
+    
+    elif chart_name == "traffic_overview":
+        rows = conn.execute("SELECT * FROM indicators WHERE category = 'Transportation' ORDER BY name").fetchall()
+        if rows:
+            values = [float(r["value"]) for r in rows if r["value"].isdigit()][:10]
+            labels = [r["name"][:15] for r in rows][:len(values)]
+            ax.barh(labels, values, color="#10b981")
+            ax.set_title("Traffic Overview")
+        else:
+            ax.text(0.5, 0.5, "No data", ha="center", va="center")
+    
+    elif chart_name == "schools_by_type":
+        rows = conn.execute("SELECT * FROM indicators WHERE name LIKE 'schools_%' ORDER BY name").fetchall()
+        if rows:
+            ax.pie([float(r["value"]) for r in rows if r["value"].isdigit()], labels=[r["name"] for r in rows if r["value"].isdigit()], autopct="%1.0f%%")
+            ax.set_title("Schools by Type")
+        else:
+            ax.text(0.5, 0.5, "No data", ha="center", va="center")
+    
+    elif chart_name == "infrastructure":
+        rows = conn.execute("SELECT * FROM indicators WHERE category = 'Infrastructure' ORDER BY name").fetchall()
+        if rows:
+            values = [float(r["value"]) for r in rows if r["value"].isdigit()][:10]
+            labels = [r["name"][:15] for r in rows][:len(values)]
+            ax.barh(labels, values, color="#f59e0b")
+            ax.set_title("Infrastructure")
+        else:
+            ax.text(0.5, 0.5, "No data", ha="center", va="center")
+    
+    else:
+        ax.text(0.5, 0.5, f"Unknown chart: {chart_name}", ha="center", va="center")
+    
+    conn.close()
+    plt.tight_layout()
+    
+    # Save to bytes
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png", dpi=100, bbox_inches="tight")
+    plt.close(fig)
+    buf.seek(0)
+    
+    return StreamingResponse(buf, media_type="image/png")
 
 
 # ── Dashboard Renderer ────────────────────────────────────────────────────
@@ -868,43 +1004,6 @@ async def dashboard_page():
       <div class="card"><div class="stat-value">$327,100</div><div>Home Value</div></div>
       <div class="card"><div class="stat-value">A</div><div>School Grade</div></div>
       <div class="card"><div class="stat-value">84/100</div><div>Water Safety</div></div>
-    </div>
-  </div>
-</body>
-</html>"""
-    return HTMLResponse(html)
-
-
-@app.get("/")
-async def index():
-    """Main website page."""
-    html = """<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Project Volusia</title>
-  <style>
-    body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; margin: 0; }
-    .header { background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%); padding: 2rem; text-align: center; }
-    .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; }
-    .card { background: #1e293b; border-radius: 8px; padding: 1.25rem; border: 1px solid #334155; }
-    .btn { display: inline-block; padding: 0.5rem 1rem; border-radius: 6px; text-decoration: none; font-weight: 600; background: #38bdf8; color: #0f172a; }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <h1>Project Volusia</h1>
-    <p>Open intelligence for Volusia County, Florida</p>
-  </div>
-  <div class="container">
-    <div class="grid">
-      <div class="card"><h3>Dashboard</h3><p>Executive KPIs</p><a href="/dashboard" class="btn">View</a></div>
-      <div class="card"><h3>Data Explorer</h3><p>Filterable data</p><a href="/data-explorer" class="btn">Explore</a></div>
-      <div class="card"><h3>Sensors</h3><p>Real-time feeds</p><a href="/sensors" class="btn">View</a></div>
-      <div class="card"><h3>Contribute</h3><p>Submit data</p><a href="/contribute" class="btn">Contribute</a></div>
-      <div class="card"><h3>OSINT</h3><p>Sources</p><a href="/osint-recon" class="btn">View</a></div>
-      <div class="card"><h3>GEOINT</h3><p>Geospatial</p><a href="/geoint" class="btn">View</a></div>
     </div>
   </div>
 </body>
