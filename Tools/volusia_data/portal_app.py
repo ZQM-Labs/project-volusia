@@ -960,6 +960,19 @@ def osint_recon():
     return HTMLResponse("<html><body><h1>OSINT Recon</h1></body></html>")
 
 
+@app.get("/osint-report", response_class=HTMLResponse)
+def osint_report():
+    """Full OSINT recon report page."""
+    locations = [
+        Path("Z:/14_Projects/Active/Project-Volusia/osint-report.html"),
+        Path("Z:/zqm-garden-03/web/zqmlabs.com/osint-report.html"),
+    ]
+    for loc in locations:
+        if loc.exists():
+            return HTMLResponse(loc.read_text(encoding="utf-8"))
+    return HTMLResponse("<html><body><h1>OSINT Report</h1></body></html>")
+
+
 @app.get("/api/coherence")
 def api_coherence():
     disagreements = _get_coherence_disagreements()

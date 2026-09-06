@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OSINT Recon Report — Project Volusia</title>
+  <style>
+    :root { --bg:#0f172a; --ink:#e2e8f0; --muted:#94a3b8; --accent:#38bdf8; --card:#1e293b; --border:#334155; --green:#10b981; --yellow:#f59e0b; --red:#ef4444; --purple:#a78bfa; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: var(--bg); color: var(--ink); line-height:1.6; }
+    header { border-bottom: 1px solid var(--border); }
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    .nav { display:flex; justify-content:space-between; align-items:center; }
+    .logo { font-weight:800; letter-spacing:-0.02em; font-size:18px; color: var(--accent); text-decoration: none; }
+    .nav a { color: var(--ink); text-decoration:none; font-weight:500; padding:6px 10px; border-radius:6px; margin-left: 4px; }
+    .nav a:hover { background:#334155; color: var(--accent); }
+    .hero { padding: 40px 20px; }
+    h1 { font-size: 32px; margin: 0 0 8px; }
+    .subtitle { color: var(--muted); margin-bottom: 20px; }
+    .stats { display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin: 24px 0; }
+    .stat { background: var(--card); border:1px solid var(--border); border-radius: 12px; padding: 20px; text-align: center; }
+    .stat-value { font-size: 24px; font-weight: 700; color: var(--accent); }
+    .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px; }
+    .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin: 24px 0; }
+    .card { background: var(--card); border:1px solid var(--border); border-radius: 12px; padding: 20px; }
+    .card h3 { margin: 0 0 12px; font-size: 16px; }
+    .card p { margin: 0; font-size: 13px; color: var(--muted); }
+    table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
+    th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+    th { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; background: #0f172a; }
+    footer { border-top:1px solid var(--border); color: var(--muted); font-size:13px; padding: 20px; text-align: center; margin-top: 40px; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+    .badge-live { background: #dcfce7; color: #166534; }
+    .badge-queued { background: #fef3c7; color: #92400e; }
+    .badge-rejected { background: #fee2e2; color: #991b1b; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container nav">
+      <a href="/" class="logo">Project Volusia</a>
+      <div>
+        <a href="/dashboard">Dashboard</a>
+        <a href="/data-explorer">Data</a>
+        <a href="/osint-recon">OSINT Recon</a>
+        <a href="/contribute/">Contribute</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="hero">
+    <h1>OSINT Recon Report</h1>
+    <p class="subtitle">Full-spectrum open-source intelligence for Volusia County, Florida. All data sourced from public records, government APIs, and verified open-data portals.</p>
+  </div>
+
+  <section>
+    <div class="container">
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-value">124</div>
+          <div class="stat-label">Indicators</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">11</div>
+          <div class="stat-label">Categories</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">40+</div>
+          <div class="stat-label">Sources</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">200</div>
+          <div class="stat-label">Quality Checks</div>
+        </div>
+      </div>
+
+      <h2>OSINT by Category</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>Government</h3>
+          <p>County portals, elections, GIS, permits, and transparency tools.</p>
+          <ul style="margin: 8px 0 0; padding-left: 20px; font-size: 12px; color: var(--muted);">
+            <li>Main portal: volusia.org</li>
+            <li>GIS Open Data: ArcGIS Hub</li>
+            <li>Elections: volusiaelections.gov</li>
+            <li>Permits: ConnectLive portal</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Public Safety</h3>
+          <p>Crime stats, arrests, courts, and corrections data.</p>
+          <ul style="margin: 8px 0 0; padding-left: 20px; font-size: 12px; color: var(--muted);">
+            <li>VCSO daily reports</li>
+            <li>FDLE UCR reports</li>
+            <li>CrimeByCounty analytics</li>
+            <li>Inmate search portal</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Economy</h3>
+          <p>EDC, major developments, business resources, real estate.</p>
+          <ul style="margin: 8px 0 0; padding-left: 20px; font-size: 12px; color: var(--muted);">
+            <li>EDC: volusiabusiness.org</li>
+            <li>Farmton: 23K homes planned</li>
+            <li>Amazon: $253M facility</li>
+            <li>Ormond Crossings: 2,550 units</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Education</h3>
+          <p>District grades, proficiency rates, school performance.</p>
+          <ul style="margin: 8px 0 0; padding-left: 20px; font-size: 12px; color: var(--muted);">
+            <li>District grade: A (2nd year)</li>
+            <li>Schools: 67 total</li>
+            <li>Geometry proficiency: 96%</li>
+            <li>All high schools: A or B</li>
+          </ul>
+        </div>
+      </div>
+
+      <h2>Key Findings</h2>
+      <table>
+        <thead>
+          <tr><th>Finding</th><th>Source</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>County considering permanent AI data center ban</td><td>News-Journal</td><td><span class="badge badge-queued">In Progress</span></td></tr>
+          <tr><td>Farmton: 70,000-acre master-planned community</td><td>EDC</td><td><span class="badge badge-live">Active</span></td></tr>
+          <tr><td>Volusia County Schools: 2nd consecutive "A" district grade</td><td>FL DOE</td><td><span class="badge badge-live">Confirmed</span></td></tr>
+          <tr><td>Volusia-Floridan Sole Source Aquifer (EPA designation)</td><td>EPA</td><td><span class="badge badge-live">Confirmed</span></td></tr>
+          <tr><td>250K parcels tracked by Property Appraiser</td><td>VCPA</td><td><span class="badge badge-live">Active</span></td></tr>
+          <tr><td>6 hospitals in county (544.5 per 100K)</td><td>CMS</td><td><span class="badge badge-live">Confirmed</span></td></tr>
+          <tr><td>COVID peak: 122 patients at Halifax Health</td><td>Fox 35</td><td><span class="badge badge-live">Historical</span></td></tr>
+          <tr><td>171,599 total COVID cases (2020-2026)</td><td>FL DOH</td><td><span class="badge badge-live">Confirmed</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      &copy; ZQM Labs — Project Volusia. Full OSINT recon from public records and government APIs.
+    </div>
+  </footer>
+</body>
+</html>
