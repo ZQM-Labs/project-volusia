@@ -256,6 +256,37 @@ def generate_report():
     range_results = validate_range(conn)
     freshness_results = validate_freshness(conn)
     
+    # Import citation validation
+    from quality.citations import validate_citation_completeness, validate_attribution_quality
+    
+    citation_results = []
+    rows = conn.execute("SELECT * FROM indicators ORDER BY category, name").fetchall()
+    for row in rows:
+        row_dict = dict(row)
+        comp_score, comp_issues = validate_citation_completeness(row_dict)
+        attr_score, attr_issues = validate_attribution_quality(row_dict)
+        url = row_dict.get("source_url", "")
+        if url:
+            from quality.citations import validate_url_format
+            url_valid, url_score, url_issues = validate_url_format(url)
+        else:
+            url_score = 0
+            url_issues = ["No URL"]
+        
+        overall = comp_score * 0.5 + attr_score * 0.3 + url_score * 0.2
+        
+        citation_results.append({
+            "indicator": row_dict.get("name", ""),
+            "source": row_dict.get("source", ""),
+            "url": url,
+            "vintage": row_dict.get("vintage", ""),
+            "completeness": comp_score,
+            "attribution": attr_score,
+            "url_score": url_score,
+            "overall": round(overall, 1),
+            "issues": comp_issues + attr_issues + url_issues,
+        })
+    
     all_checks = range_results + freshness_results
     
     ok = len([c for c in all_checks if c["status"] == "OK"])
@@ -278,6 +309,7 @@ def generate_report():
         "checks": {
             "range": range_results,
             "freshness": freshness_results,
+            "citations": citation_results,
         },
     }
     

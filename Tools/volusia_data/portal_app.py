@@ -1251,6 +1251,71 @@ def api_export_full(format: str = "json"):
     }
 
 
+@app.get("/citations", response_class=HTMLResponse)
+def citations():
+    """Citation validation page."""
+    locations = [
+        Path("Z:/14_Projects/Active/Project-Volusia/citations.html"),
+        Path("Z:/zqm-garden-03/web/zqmlabs.com/citations.html"),
+    ]
+    for loc in locations:
+        if loc.exists():
+            return HTMLResponse(loc.read_text(encoding="utf-8"))
+    return HTMLResponse("<html><body><h1>Citations</h1></body></html>")
+
+
+@app.get("/api/citations")
+def api_citations():
+    """Citation validation API endpoint."""
+    import sqlite3
+    from quality.validate import DB_PATH
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    
+    rows = conn.execute("SELECT * FROM indicators ORDER BY category, name").fetchall()
+    
+    results = []
+    for row in rows:
+        row_dict = dict(row)
+        name = row_dict.get("name", "")
+        source = row_dict.get("source", "")
+        url = row_dict.get("source_url", "")
+        vintage = row_dict.get("vintage", "")
+        description = row_dict.get("description", "")
+        
+        score = 100
+        issues = []
+        
+        if not source:
+            score -= 30
+            issues.append("Missing source")
+        if not url:
+            score -= 30
+            issues.append("Missing URL")
+        if not vintage:
+            score -= 15
+            issues.append("Missing vintage")
+        if not description or len(description) < 10:
+            score -= 10
+            issues.append("Missing/short description")
+        
+        results.append({
+            "indicator": name,
+            "source": source,
+            "url": url,
+            "vintage": vintage,
+            "score": max(0, score),
+            "issues": issues,
+        })
+    
+    conn.close()
+    
+    return {
+        "total": len(results),
+        "citations": results,
+    }
+
+
 @app.get("/osint-recon", response_class=HTMLResponse)
 def osint_recon():
     """OSINT Recon page with data sources and indicators."""
