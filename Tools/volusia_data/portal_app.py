@@ -1281,8 +1281,8 @@ def citations():
 def api_citations():
     """Citation validation API endpoint."""
     import sqlite3
-    from quality.validate import DB_PATH
-    conn = sqlite3.connect(DB_PATH)
+    DB_PATH = Path(__file__).resolve().parent.parent / "volusia_data" / "volusia.db"
+    conn = sqlite3.connect(str(DB_PATH))
     conn.row_factory = sqlite3.Row
     
     rows = conn.execute("SELECT * FROM indicators ORDER BY category, name").fetchall()
@@ -1305,6 +1305,9 @@ def api_citations():
         if not url:
             score -= 30
             issues.append("Missing URL")
+        elif not url.startswith(("http://", "https://")):
+            score -= 10
+            issues.append("Invalid URL format")
         if not vintage:
             score -= 15
             issues.append("Missing vintage")
@@ -1323,8 +1326,11 @@ def api_citations():
     
     conn.close()
     
+    avg_score = sum(r["score"] for r in results) / len(results) if results else 0
+    
     return {
         "total": len(results),
+        "average_score": round(avg_score, 1),
         "citations": results,
     }
 
