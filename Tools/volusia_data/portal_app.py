@@ -1251,6 +1251,19 @@ def api_export_full(format: str = "json"):
     }
 
 
+@app.get("/sensors", response_class=HTMLResponse)
+def sensors():
+    """Real-time sensors and cameras page."""
+    locations = [
+        Path("Z:/14_Projects/Active/Project-Volusia/sensors.html"),
+        Path("Z:/zqm-garden-03/web/zqmlabs.com/sensors.html"),
+    ]
+    for loc in locations:
+        if loc.exists():
+            return HTMLResponse(loc.read_text(encoding="utf-8"))
+    return HTMLResponse("<html><body><h1>Sensors</h1></body></html>")
+
+
 @app.get("/citations", response_class=HTMLResponse)
 def citations():
     """Citation validation page."""

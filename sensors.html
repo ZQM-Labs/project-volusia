@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Real-Time Sensors — Project Volusia</title>
+  <style>
+    :root { --bg:#0f172a; --ink:#e2e8f0; --muted:#94a3b8; --accent:#38bdf8; --card:#1e293b; --border:#334155; --green:#10b981; --yellow:#f59e0b; --red:#ef4444; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: var(--bg); color: var(--ink); line-height:1.6; }
+    header { border-bottom: 1px solid var(--border); }
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    .nav { display:flex; justify-content:space-between; align-items:center; }
+    .logo { font-weight:800; letter-spacing:-0.02em; font-size:18px; color: var(--accent); text-decoration: none; }
+    .nav a { color: var(--ink); text-decoration:none; font-weight:500; padding:6px 10px; border-radius:6px; margin-left: 4px; }
+    .nav a:hover { background:#334155; color: var(--accent); }
+    .hero { padding: 40px 20px; }
+    h1 { font-size: 32px; margin: 0 0 8px; }
+    .subtitle { color: var(--muted); margin-bottom: 20px; }
+    .stats { display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin: 24px 0; }
+    .stat { background: var(--card); border:1px solid var(--border); border-radius: 12px; padding: 20px; text-align: center; }
+    .stat-value { font-size: 24px; font-weight: 700; color: var(--accent); }
+    .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px; }
+    .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin: 24px 0; }
+    .card { background: var(--card); border:1px solid var(--border); border-radius: 12px; padding: 20px; }
+    .card h3 { margin: 0 0 12px; font-size: 16px; }
+    .card p { margin: 0; font-size: 13px; color: var(--muted); }
+    .sensor-list { list-style: none; padding: 0; margin: 12px 0; }
+    .sensor-list li { padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+    .sensor-list li:last-child { border-bottom: none; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+    .badge-live { background: #065f46; color: #10b981; }
+    .badge-near { background: #78350f; color: #f59e0b; }
+    footer { border-top:1px solid var(--border); color: var(--muted); font-size:13px; padding: 20px; text-align: center; margin-top: 40px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container nav">
+      <a href="/" class="logo">Project Volusia</a>
+      <div>
+        <a href="/dashboard">Dashboard</a>
+        <a href="/data-explorer">Data</a>
+        <a href="/sensors">Sensors</a>
+        <a href="/osint-recon">OSINT</a>
+        <a href="/contribute/">Contribute</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="hero">
+    <h1>Real-Time Sensors & Cameras</h1>
+    <p class="subtitle">Live data feeds from traffic, weather, air quality, water, and public cameras in Volusia County, FL.</p>
+  </div>
+
+  <section>
+    <div class="container">
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-value">474</div>
+          <div class="stat-label">Total Sources</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">39</div>
+          <div class="stat-label">Real-Time Sensors</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">9</div>
+          <div class="stat-label">Live Cameras</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">15</div>
+          <div class="stat-label">Categories</div>
+        </div>
+      </div>
+
+      <h2>Traffic Sensors</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>FL511 Traffic Cameras</h3>
+          <p>Real-time traffic cameras and sensors across major corridors (I-4, I-95, US 1, SR 44).</p>
+          <span class="badge badge-live">LIVE</span>
+        </div>
+        <div class="card">
+          <h3>FDOT Traffic Monitoring</h3>
+          <p>Annual average daily traffic (AADT) counts, vehicle classification, and speed data.</p>
+          <span class="badge badge-live">LIVE</span>
+        </div>
+        <div class="card">
+          <h3>I-95 Express Lanes</h3>
+          <p>Real-time express lane usage and congestion data from FDOT.</p>
+          <span class="badge badge-live">LIVE</span>
+        </div>
+      </div>
+
+      <h2>Weather Stations</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>NWS Melbourne Station</h3>
+          <p>National Weather Service station for Volusia County — temperature, humidity, wind, pressure.</p>
+          <span class="badge badge-live">LIVE</span>
+        </div>
+        <div class="card">
+          <h3>NOAA Weather Radio KIH26</h3>
+          <p>All-hazards weather radio at 162.4 MHz covering Volusia, Brevard, Orange, Seminole, Lake.</p>
+          <span class="badge badge-live">LIVE</span>
+        </div>
+        <div class="card">
+          <h3>WeatherSTEM Network</h3>
+          <p>Local weather stations at South Daytona, Daytona Beach, Oak Hill, Ponce Inlet.</p>
+          <span class="badge badge-live">LIVE</span>
+        </div>
+      </div>
+
+      <h2>Air Quality Monitors</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>EPA AirNow</h3>
+          <p>Official air quality index (AQI) data with ozone, PM2.5, PM10 monitoring.</p>
+          <span class="badge badge-live">LIVE</span>
+        </div>
+        <div class="card">
+          <h3>PurpleAir Network</h3>
+          <p>Community-driven air quality sensors with 2-minute updates for PM2.5.</p>
+          <span class="badge badge-live">LIVE</span>
+        </div>
+        <div class="card">
+          <h3>FL DEP Air Monitoring</h3>
+          <p>Official Florida DEP air monitoring stations in Daytona Beach and Port Orange.</p>
+          <span class="badge badge-live">LIVE</span>
+        </div>
+      </div>
+
+      <h2>Water Sensors</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>USGS Stream Gauges</h3>
+          <p>Real-time stream flow, water level, and precipitation data for Volusia waterways.</p>
+          <span class="badge badge-live">LIVE</span>
+        </div>
+        <div class="card">
+          <h3>NOAA Tide Gauges</h3>
+          <p>Tide levels, currents, and water temperature for coastal Volusia.</p>
+          <span class="badge badge-live">LIVE</span>
+        </div>
+        <div class="card">
+          <h3>Water Management Districts</h3>
+          <p>SFWMD and SJRWMD groundwater and surface water monitoring.</p>
+          <span class="badge badge-live">LIVE</span>
+        </div>
+      </div>
+
+      <h2>Public Cameras</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>Beach Safety Cameras</h3>
+          <p>Live 180° beach cameras at New Smyrna, Ponce Inlet, Ormond, and Dunlawton.</p>
+          <span class="badge badge-live">LIVE</span>
+        </div>
+        <div class="card">
+          <h3>Daytona Beach Webcams</h3>
+          <p>Surf and weather cameras from Hilton Daytona Beach and EarthCam.</p>
+          <span class="badge badge-live">LIVE</span>
+        </div>
+        <div class="card">
+          <h3>Coastal Camera Network</h3>
+          <p>Multiple beach and surf cameras along the Volusia coastline.</p>
+          <span class="badge badge-live">LIVE</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      &copy; ZQM Labs — Project Volusia. Real-time sensor and camera data for Volusia County, FL.
+    </div>
+  </footer>
+</body>
+</html>
