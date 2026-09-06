@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GEOINT Surface — Project Volusia</title>
+  <style>
+    :root { --bg:#0f172a; --ink:#e2e8f0; --muted:#94a3b8; --accent:#38bdf8; --card:#1e293b; --border:#334155; --green:#10b981; --yellow:#f59e0b; --red:#ef4444; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: var(--bg); color: var(--ink); line-height:1.6; }
+    header { border-bottom: 1px solid var(--border); }
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    .nav { display:flex; justify-content:space-between; align-items:center; }
+    .logo { font-weight:800; letter-spacing:-0.02em; font-size:18px; color: var(--accent); text-decoration: none; }
+    .nav a { color: var(--ink); text-decoration:none; font-weight:500; padding:6px 10px; border-radius:6px; margin-left: 4px; }
+    .nav a:hover { background:#334155; color: var(--accent); }
+    .hero { padding: 40px 20px; }
+    h1 { font-size: 32px; margin: 0 0 8px; }
+    .subtitle { color: var(--muted); margin-bottom: 20px; }
+    .stats { display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin: 24px 0; }
+    .stat { background: var(--card); border:1px solid var(--border); border-radius: 12px; padding: 20px; text-align: center; }
+    .stat-value { font-size: 24px; font-weight: 700; color: var(--accent); }
+    .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px; }
+    .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin: 24px 0; }
+    .card { background: var(--card); border:1px solid var(--border); border-radius: 12px; padding: 20px; }
+    .card h3 { margin: 0 0 12px; font-size: 16px; }
+    .card p { margin: 0; font-size: 13px; color: var(--muted); }
+    table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
+    th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+    th { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; background: #0f172a; }
+    footer { border-top:1px solid var(--border); color: var(--muted); font-size:13px; padding: 20px; text-align: center; margin-top: 40px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container nav">
+      <a href="/" class="logo">Project Volusia</a>
+      <div>
+        <a href="/dashboard">Dashboard</a>
+        <a href="/data-explorer">Data</a>
+        <a href="/geoint">GEOINT</a>
+        <a href="/osint-recon">OSINT</a>
+        <a href="/contribute/">Contribute</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="hero">
+    <h1>GEOINT Surface</h1>
+    <p class="subtitle">Geospatial intelligence for Volusia County, Florida. GIS data, remote sensing, boundaries, hydrography, transportation, and critical infrastructure.</p>
+  </div>
+
+  <section>
+    <div class="container">
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-value">187</div>
+          <div class="stat-label">Total Indicators</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">16</div>
+          <div class="stat-label">Categories</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">100+</div>
+          <div class="stat-label">GIS Layers</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">6</div>
+          <div class="stat-label">ArcGIS Servers</div>
+        </div>
+      </div>
+
+      <h2>GEOINT Categories</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>GIS & Remote Sensing</h3>
+          <p>Aerial imagery, LiDAR, NAIP, satellite data, and terrain models.</p>
+          <ul style="margin: 8px 0 0; padding-left: 20px; font-size: 12px; color: var(--muted);">
+            <li>2024 aerial imagery (3-inch res)</li>
+            <li>USGS LiDAR (2006, 2018-2019)</li>
+            <li>USDA NAIP 1-foot imagery</li>
+            <li>3DEP elevation data</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Boundaries & Parcels</h3>
+          <p>County, city, ZIP codes, census tracts, parcels, municipalities.</p>
+          <ul style="margin: 8px 0 0; padding-left: 20px; font-size: 12px; color: var(--muted);">
+            <li>311,515 parcels (Regrid)</li>
+            <li>306,706 parcels (VCPA)</li>
+            <li>27 ZIP codes</li>
+            <li>20 municipalities</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Transportation</h3>
+          <p>Roads, highways, airports, ports, traffic data, transit.</p>
+          <ul style="margin: 8px 0 0; padding-left: 20px; font-size: 12px; color: color: var(--muted);">
+            <li>I-4, I-95, US 1 corridors</li>
+            <li>Daytona Beach International</li>
+            <li>FDOT AADT traffic data</li>
+            <li>FL 511 real-time traffic</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Hydrography</h3>
+          <p>Rivers, lakes, intracoastal waterway, flood zones, wetlands.</p>
+          <ul style="margin: 8px 0 0; padding-left: 20px; font-size: 12px; color: var(--muted);">
+            <li>Halifax River</li>
+            <li>St. Johns River</li>
+            <li>FEMA flood zones</li>
+            <li>National Wetlands Inventory</li>
+          </ul>
+        </div>
+      </div>
+
+      <h2>Key Findings</h2>
+      <table>
+        <thead>
+          <tr><th>Finding</th><th>Source</th><th>Category</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>County area: 1,101.2 sq mi (2,852 sq km)</td><td>Census</td><td>Terrain</td></tr>
+          <tr><td>Atlantic coastline: ~50 miles</td><td>NOAA</td><td>Terrain</td></tr>
+          <tr><td>Max elevation: ~250 ft (coastal plain)</td><td>USGS</td><td>Terrain</td></tr>
+          <tr><td>311,515 parcels with matched buildings</td><td>Regrid</td><td>Boundaries</td></tr>
+          <tr><td>20 incorporated municipalities</td><td>Volusia County</td><td>Boundaries</td></tr>
+          <tr><td>Daytona Beach International Airport</td><td>Volusia County</td><td>Infrastructure</td></tr>
+          <tr><td>Halifax River + Intracoastal Waterway</td><td>USGS</td><td>Hydrography</td></tr>
+          <tr><td>2024 aerial imagery (3-inch resolution)</td><td>Volusia County</td><td>GIS</td></tr>
+          <tr><td>USGS LiDAR 2018-2019 (2.5ft DEM)</td><td>USGS</td><td>GIS</td></tr>
+          <tr><td>6 hospitals in county</td><td>CMS</td><td>Infrastructure</td></tr>
+          <tr><td>67 schools in district</td><td>VCS</td><td>Infrastructure</td></tr>
+          <tr><td>14 public library branches</td><td>Volusia County</td><td>Infrastructure</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      &copy; ZQM Labs — Project Volusia. GEOINT from public GIS, remote sensing, and infrastructure data.
+    </div>
+  </footer>
+</body>
+</html>

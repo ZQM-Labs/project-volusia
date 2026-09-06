@@ -973,6 +973,19 @@ def osint_report():
     return HTMLResponse("<html><body><h1>OSINT Report</h1></body></html>")
 
 
+@app.get("/geoint", response_class=HTMLResponse)
+def geoint():
+    """GEOINT page with geospatial data and infrastructure."""
+    locations = [
+        Path("Z:/14_Projects/Active/Project-Volusia/geoint.html"),
+        Path("Z:/zqm-garden-03/web/zqmlabs.com/geoint.html"),
+    ]
+    for loc in locations:
+        if loc.exists():
+            return HTMLResponse(loc.read_text(encoding="utf-8"))
+    return HTMLResponse("<html><body><h1>GEOINT</h1></body></html>")
+
+
 @app.get("/api/coherence")
 def api_coherence():
     disagreements = _get_coherence_disagreements()
