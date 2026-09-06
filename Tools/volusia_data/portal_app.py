@@ -947,6 +947,310 @@ def chart_education_health():
     return _chart_response(fig)
 
 
+@app.get("/api/chart/traffic_overview.png")
+def chart_traffic_overview():
+    """Bar chart: AADT traffic volumes for major roads."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    rows = _db_rows(
+        "SELECT name, value FROM indicators WHERE name LIKE '%corridor%' OR name LIKE '%aadt%' ORDER BY name"
+    )
+    
+    if not rows:
+        return _chart_no_data_response("No traffic data available.")
+    
+    labels = []
+    values = []
+    for r in rows:
+        label = r["name"].replace("_corridor", "").replace("_", " ").upper()
+        try:
+            val = float(r["value"])
+        except (ValueError, TypeError):
+            continue
+        labels.append(label)
+        values.append(val)
+
+    if not labels:
+        return _chart_no_data_response("No traffic data available.")
+
+    fig, ax = plt.subplots(figsize=(12, 6))
+    colors = ["#059669", "#10b981", "#38bdf8", "#8b5cf6", "#f59e0b", "#ef4444"]
+    bars = ax.bar(labels, values, color=colors[: len(labels)])
+    ax.set_title("Volusia County Major Road Corridors (FDOT)")
+    ax.set_ylabel("Status")
+    ax.grid(True, alpha=0.3, axis="y")
+    for bar, val in zip(bars, values):
+        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height(),
+                f"{val}", ha="center", va="bottom", fontsize=9)
+    fig.tight_layout()
+    return _chart_response(fig)
+
+
+@app.get("/api/chart/schools_by_type.png")
+def chart_schools_by_type():
+    """Pie chart: schools by type."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    indicators = ["schools_elementary", "schools_middle", "schools_high"]
+    rows = _db_rows(
+        "SELECT name, value FROM indicators WHERE name IN ({})".format(
+            ",".join("?" for _ in indicators)
+        ), indicators
+    )
+    
+    if not rows:
+        return _chart_no_data_response("No school data available.")
+    
+    labels = []
+    values = []
+    for r in rows:
+        label = r["name"].replace("schools_", "").title()
+        try:
+            val = float(r["value"])
+        except (ValueError, TypeError):
+            continue
+        labels.append(label)
+        values.append(val)
+
+    if not labels:
+        return _chart_no_data_response("No school data available.")
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+    colors = ["#10b981", "#38bdf8", "#f59e0b"]
+    wedges, texts, autotexts = ax.pie(
+        values, labels=labels, autopct='%1.1f%%', colors=colors[: len(labels)],
+        startangle=90
+    )
+    ax.set_title("Volusia County Schools by Type")
+    fig.tight_layout()
+    return _chart_response(fig)
+
+
+@app.get("/api/chart/infrastructure.png")
+def chart_infrastructure():
+    """Bar chart: critical infrastructure counts."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    indicators = ["hospitals_count", "schools_count", "fire_stations", "libraries_count"]
+    rows = _db_rows(
+        "SELECT name, value FROM indicators WHERE name IN ({})".format(
+            ",".join("?" for _ in indicators)
+        ), indicators
+    )
+    
+    if not rows:
+        return _chart_no_data_response("No infrastructure data available.")
+    
+    labels = []
+    values = []
+    for r in rows:
+        label = r["name"].replace("_count", "").replace("_", " ").title()
+        try:
+            val = float(r["value"])
+        except (ValueError, TypeError):
+            continue
+        labels.append(label)
+        values.append(val)
+
+    if not labels:
+        return _chart_no_data_response("No infrastructure data available.")
+
+    fig, ax = plt.subplots(figsize=(10, 5))
+    colors = ["#ef4444", "#10b981", "#f59e0b", "#38bdf8"]
+    bars = ax.bar(labels, values, color=colors[: len(labels)])
+    ax.set_title("Volusia County Critical Infrastructure")
+    ax.set_ylabel("Count")
+    ax.grid(True, alpha=0.3, axis="y")
+    for bar, val in zip(bars, values):
+        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height(),
+                f"{val:,.0f}", ha="center", va="bottom", fontsize=9)
+    fig.tight_layout()
+    return _chart_response(fig)
+
+
+@app.get("/api/search")
+def api_search(q: str = "", category: str = "", source: str = "", limit: int = 50):
+    """Search indicators by name, category, or source."""
+    query = "SELECT * FROM indicators WHERE 1=1"
+    params = []
+    
+    if q:
+        query += " AND (name LIKE ? OR description LIKE ? OR source LIKE ?)"
+        params.extend([f"%{q}%", f"%{q}%", f"%{q}%"])
+    if category:
+        query += " AND category = ?"
+        params.append(category)
+    if source:
+        query += " AND source = ?"
+        params.append(source)
+    
+    query += " ORDER BY category, name LIMIT ?"
+    params.append(limit)
+    
+    conn = sqlite3.connect(str(DB_PATH))
+    rows = conn.execute(query, params).fetchall()
+    
+    return {
+        "count": len(rows),
+        "query": q,
+        "category": category,
+        "source": source,
+        "indicators": [dict(r) for r in rows],
+    }
+
+
+@app.get("/api/compare")
+def api_compare(name1: str, name2: str):
+    """Compare two indicators side by side."""
+    conn = sqlite3.connect(str(DB_PATH))
+    
+    row1 = conn.execute("SELECT * FROM indicators WHERE name = ?", (name1,)).fetchone()
+    row2 = conn.execute("SELECT * FROM indicators WHERE name = ?", (name2,)).fetchone()
+    
+    if not row1 or not row2:
+        return {"error": "One or both indicators not found"}
+    
+    # Get time series for both
+    ts1 = conn.execute("SELECT * FROM time_series WHERE indicator_name = ? ORDER BY fetched_at", (name1,)).fetchall()
+    ts2 = conn.execute("SELECT * FROM time_series WHERE indicator_name = ? ORDER BY fetched_at", (name2,)).fetchall()
+    
+    return {
+        "indicator1": dict(row1),
+        "indicator2": dict(row2),
+        "time_series1": [dict(t) for t in ts1],
+        "time_series2": [dict(t) for t in ts2],
+    }
+
+
+@app.get("/api/trend")
+def api_trend(name: str):
+    """Get trend analysis for an indicator."""
+    conn = sqlite3.connect(str(DB_PATH))
+    
+    row = conn.execute("SELECT * FROM indicators WHERE name = ?", (name,)).fetchone()
+    if not row:
+        return {"error": "Indicator not found"}
+    
+    ts = conn.execute("SELECT * FROM time_series WHERE indicator_name = ? ORDER BY fetched_at", (name,)).fetchall()
+    
+    if len(ts) < 2:
+        return {
+            "indicator": dict(row),
+            "trend": "insufficient_data",
+            "message": "Need at least 2 data points for trend analysis",
+        }
+    
+    values = [t["value"] for t in ts]
+    
+    # Calculate trend
+    first_val = values[0]
+    last_val = values[-1]
+    change = last_val - first_val
+    pct_change = (change / first_val * 100) if first_val != 0 else 0
+    
+    # Simple moving average
+    if len(values) >= 3:
+        ma3 = sum(values[-3:]) / 3
+    else:
+        ma3 = sum(values) / len(values)
+    
+    trend = "up" if change > 0 else "down" if change < 0 else "stable"
+    
+    return {
+        "indicator": dict(row),
+        "trend": trend,
+        "first_value": first_val,
+        "last_value": last_val,
+        "change": change,
+        "percent_change": round(pct_change, 2),
+        "moving_average_3": round(ma3, 2),
+        "data_points": len(values),
+        "time_series": [dict(t) for t in ts],
+    }
+
+
+@app.get("/api/correlation")
+def api_correlation():
+    """Calculate correlation between numeric indicators."""
+    conn = sqlite3.connect(str(DB_PATH))
+    
+    # Get all numeric indicators
+    rows = conn.execute("SELECT name, value FROM indicators").fetchall()
+    numeric = {}
+    for r in rows:
+        try:
+            numeric[r["name"]] = float(r["value"])
+        except (ValueError, TypeError):
+            pass
+    
+    if len(numeric) < 2:
+        return {"error": "Need at least 2 numeric indicators"}
+    
+    # Calculate correlations between indicators in same category
+    categories = {}
+    for name, value in numeric.items():
+        row = conn.execute("SELECT category FROM indicators WHERE name = ?", (name,)).fetchone()
+        if row:
+            cat = row["category"]
+            if cat not in categories:
+                categories[cat] = []
+            categories[cat].append((name, value))
+    
+    correlations = []
+    for cat, indicators in categories.items():
+        if len(indicators) >= 2:
+            for i in range(len(indicators)):
+                for j in range(i + 1, len(indicators)):
+                    n1, v1 = indicators[i]
+                    n2, v2 = indicators[j]
+                    # Simple difference-based correlation score
+                    if v1 != 0:
+                        diff_pct = abs(v1 - v2) / v1 * 100
+                        correlations.append({
+                            "indicator1": n1,
+                            "indicator2": n2,
+                            "category": cat,
+                            "value1": v1,
+                            "value2": v2,
+                            "difference_pct": round(diff_pct, 2),
+                        })
+    
+    return {
+        "total_correlations": len(correlations),
+        "correlations": sorted(correlations, key=lambda x: x["difference_pct"], reverse=True)[:20],
+    }
+
+
+@app.get("/api/export/full")
+def api_export_full(format: str = "json"):
+    """Full data export in JSON or CSV."""
+    conn = sqlite3.connect(str(DB_PATH))
+    
+    indicators = conn.execute("SELECT * FROM indicators ORDER BY category, name").fetchall()
+    
+    if format == "csv":
+        import io
+        import csv
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow(["name", "value", "unit", "category", "source", "source_url", "vintage", "fetched_at", "description"])
+        for i in indicators:
+            writer.writerow([i["name"], i["value"], i["unit"], i["category"], i["source"], i["source_url"], i["vintage"], i["fetched_at"], i["description"]])
+        return Response(content=output.getvalue(), media_type="text/csv", headers={"Content-Disposition": "attachment; filename=volusia_full_export.csv"})
+    
+    return {
+        "count": len(indicators),
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "indicators": [dict(i) for i in indicators],
+    }
+
+
 @app.get("/osint-recon", response_class=HTMLResponse)
 def osint_recon():
     """OSINT Recon page with data sources and indicators."""
