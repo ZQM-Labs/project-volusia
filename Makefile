@@ -1,4 +1,4 @@
-.PHONY: help install test lint run clean dev release
+.PHONY: help install test test-fast lint run clean dev release
 
 # Project Volusia Makefile - Developer QOL Improvements
 # Usage: make [target]
@@ -14,6 +14,7 @@ help:
 	@echo ""
 	@echo "Quality:"
 	@echo "  test      - Run all tests"
+	@echo "  test-fast - Run tests, skipping live-network fetcher tests"
 	@echo "  lint      - Run linting and formatting checks"
 	@echo "  format    - Auto-format code"
 	@echo "  safety    - Security check dependencies"
@@ -34,6 +35,10 @@ install:
 # Run tests with pytest
 test:
 	pytest tests/ -v --tb=short --durations=0
+
+# Fast test loop: skip live-network fetcher tests
+test-fast:
+	pytest tests/ -m "not network" -v --tb=short
 
 # Run linting
 lint:

@@ -18,6 +18,10 @@ from volusia_data.fetchers import fetch_census_pep
 from volusia_data.fetchers import fetch_noaa
 from volusia_data.fetchers import fetch_qcew
 
+# Every test in this module calls live external APIs (Census, NOAA, BLS).
+# Deselect for fast local/CI loops with: pytest -m "not network"
+pytestmark = pytest.mark.network
+
 
 def test_census_pep_fetch():
     """Test Census PEP fetcher returns data."""
