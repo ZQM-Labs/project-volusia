@@ -31,7 +31,7 @@ jobs:
           BLS_API_KEY: ${{ secrets.BLS_API_KEY }}
           BEA_API_KEY: ${{ secrets.BEA_API_KEY }}
       - name: Upload DB artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: volusia-db
           path: Tools/volusia_data/volusia.db
