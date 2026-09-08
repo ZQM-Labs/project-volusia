@@ -16,7 +16,7 @@ jobs:
   scan:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       # P1-021: the scanner script lives in a private repo, so the download
       # 404s for anonymous runners (observed: "Download scanner" fail, run
       # 33780238547). Probe first and skip the scan cleanly instead of
@@ -51,7 +51,7 @@ jobs:
         with:
           sarif_file: .zqm-security-reports/
       - name: Upload findings artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: supply-chain-scan-${{ github.run_id }}
           path: .zqm-security-reports/
