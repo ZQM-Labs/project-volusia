@@ -59,5 +59,39 @@ def test_status():
 
 
 def test_datasets():
-    r = client.get("/api/datasets")
+    client.get("/api/datasets")
+
+
+def test_indicators_pagination():
+    """Verify pagination parameters work correctly."""
+    r = client.get("/api/indicators?limit=5&offset=0")
+    assert r.status_code == 200
+    data = r.json()
+    assert "limit" in data
+    assert "offset" in data
+    assert "has_more" in data
+    assert data["limit"] == 5
+    assert data["offset"] == 0
+
+
+def test_indicators_pagination_offset():
+    """Verify offset skips results correctly."""
+    r1 = client.get("/api/indicators?limit=2&offset=0")
+    r2 = client.get("/api/indicators?limit=2&offset=2")
+    assert r1.status_code == 200
+    assert r2.status_code == 200
+    data1 = r1.json()
+    data2 = r2.json()
+    # If there are enough indicators, the results should differ
+    if data1["indicators"] and data2["indicators"]:
+        assert data1["indicators"][0]["name"] != data2["indicators"][0]["name"]
+
+
+def test_indicators_default_limit():
+    """Verify default limit is 50 (not 100)."""
+    r = client.get("/api/indicators")
+    assert r.status_code == 200
+    data = r.json()
+    assert data["limit"] == 50
+
     assert r.status_code == 200

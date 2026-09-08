@@ -9,9 +9,10 @@ Port: 8789 (configurable via VOLUSIA_PORT env var)
 
 from __future__ import annotations
 
+__version__ = "2.1.0"
+
 import os
 import sys
-import sqlite3
 import json
 from datetime import datetime, timezone
 from pathlib import Path
@@ -38,49 +39,30 @@ DB_PATH = Path(
 PORT = int(os.environ.get("VOLUSIA_PORT", 8789))
 HOST = os.environ.get("VOLUSIA_HOST", "0.0.0.0")
 
-# ── Database Helpers ─────────────────────────────────────────────────────────
-def _db_query(query: str, params: tuple = ()) -> list[dict[str, Any]]:
-    """Execute query and return list of dicts."""
-    if not DB_PATH.exists():
-        return []
-    conn = sqlite3.connect(str(DB_PATH))
-    conn.row_factory = sqlite3.Row
-    try:
-        cur = conn.execute(query, params)
-        return [dict(r) for r in cur.fetchall()]
-    finally:
-        conn.close()
+# ── Database & Freshness (delegates to db_utils) ─────────────────────────────
+try:
+    from . import db_utils, page_templates
+except ImportError:  # script mode: python Tools/volusia_data/portal_app.py
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    from volusia_data import db_utils, page_templates
+
+_db_query = db_utils.execute_query
+_db_single = db_utils.execute_query_one
 
 
-def _db_single(query: str, params: tuple = ()) -> dict[str, Any] | None:
-    """Execute query and return single dict or None."""
-    rows = _db_query(query, params)
-    return rows[0] if rows else None
-
-
-# ── Data Freshness Check ────────────────────────────────────────────────────
 def get_freshness() -> str:
     """Get the latest fetch timestamp."""
-    row = _db_single("SELECT MAX(fetched_at) as latest FROM indicators")
-    if row and row.get("latest"):
-        return row["latest"]
-    return "N/A"
+    return db_utils.get_latest_freshness()
 
 
 def get_indicator_count() -> int:
     """Get total indicator count."""
-    count = _db_single("SELECT COUNT(*) as cnt FROM indicators")
-    return count["cnt"] if count else 0
+    return db_utils.get_indicator_count()
 
 
-# ── Data Freshness Summary ──────────────────────────────────────────────────
 def get_data_freshness_summary() -> dict[str, Any]:
     """Get per-source freshness information."""
-    rows = _db_query("""
-        SELECT source, MAX(fetched_at) as latest, COUNT(*) as cnt
-        FROM indicators GROUP BY source ORDER BY source
-    """)
-    return {r["source"]: {"latest": r["latest"], "count": r["cnt"]} for r in rows}
+    return db_utils.get_source_freshness_summary()
 
 
 # ── Core Tables ────────────────────────────────────────────────────────────
@@ -172,13 +154,19 @@ app = FastAPI(
     version="2.1.0",
 )
 
-# Enable CORS for API access
+# Enable CORS for API access — origins configurable via env var
+# Format: comma-separated list of allowed origins (e.g. "https://zqmlabs.com,http://localhost:3000")
+_allowed_origins = [
+    o.strip()
+    for o in os.environ.get("VOLUSIA_ALLOWED_ORIGINS", "http://localhost:8789,http://127.0.0.1:8789").split(",")
+    if o.strip()
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately for production
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=_allowed_origins,
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH"],
+    allow_headers=["Content-Type", "Authorization", "X-API-Key"],
 )
 
 
@@ -208,7 +196,7 @@ async def index() -> HTMLResponse:
         FROM fetch_manifest ORDER BY fetched_at DESC LIMIT 10
     """)
 
-    return HTMLResponse(_render_dashboard(rows, freshness, category_counts, disagreements, timeline))
+    return HTMLResponse(page_templates.render_dashboard(rows, freshness, category_counts, disagreements, timeline))
 
 
 @app.get("/api/health")
@@ -242,33 +230,38 @@ async def health() -> JSONResponse:
 
 @app.get("/api/indicators")
 async def list_indicators(
-    limit: int = Query(100, ge=1, le=1000),
+    limit: int = Query(50, ge=1, le=500, description="Max results per page"),
+    offset: int = Query(0, ge=0, description="Skip this many results for pagination"),
     source: str | None = Query(None),
     category: str | None = Query(None),
 ) -> JSONResponse:
-    """List all indicators with optional filtering."""
-    query = "SELECT * FROM indicators"
+    """List indicators with optional filtering and pagination."""
     params: list[Any] = []
     conditions = []
-    
+
     if source:
         conditions.append("source = ?")
         params.append(source)
     if category:
         conditions.append("category = ?")
         params.append(category)
-    
-    if conditions:
-        query += " WHERE " + " AND ".join(conditions)
-    
-    query += f" ORDER BY category, name LIMIT ?"
-    params.append(limit)
-    
-    rows = _db_query(query, tuple(params))
-    
+
+    where = " WHERE " + " AND ".join(conditions) if conditions else ""
+
+    # Total count (respecting filters)
+    count_row = _db_single(f"SELECT COUNT(*) as cnt FROM indicators{where}", tuple(params))
+    total = count_row["cnt"] if count_row else 0
+
+    # Paginated rows
+    query = f"SELECT * FROM indicators{where} ORDER BY category, name LIMIT ? OFFSET ?"
+    rows = _db_query(query, tuple(params + [limit, offset]))
+
     return JSONResponse({
         "count": len(rows),
-        "total": get_indicator_count(),
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+        "has_more": offset + limit < total,
         "indicators": rows,
         "filters_applied": {"source": source, "category": category} if (source or category) else {},
     })
@@ -364,244 +357,23 @@ async def export_json() -> JSONResponse:
 
 @app.get("/api/chart/{name}")
 async def get_chart(name: str):
-    """Generate chart images dynamically."""
-    import matplotlib
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
+    """Generate chart images dynamically using the charts module."""
     import io
-    
-    # Remove .png extension if provided
+
+    from . import charts
+
     chart_name = name.replace(".png", "")
-    
-    conn = sqlite3.connect(str(DB_PATH))
-    conn.row_factory = sqlite3.Row
-    
-    fig, ax = plt.subplots(figsize=(10, 6))
-    
-    if chart_name == "population_trend":
-        rows = conn.execute("SELECT * FROM indicators WHERE name LIKE 'total_population_pep_%' ORDER BY vintage").fetchall()
-        if rows:
-            ax.bar([r["vintage"] for r in rows], [float(r["value"]) for r in rows], color="#38bdf8")
-            ax.set_title("Population Trend")
-            ax.set_ylabel("Population")
-        else:
-            ax.text(0.5, 0.5, "No data", ha="center", va="center")
-    
-    elif chart_name == "employment_overview":
-        rows = conn.execute("SELECT * FROM indicators WHERE category = 'Economy' AND (name LIKE '%employment%' OR name LIKE '%establishments%') ORDER BY name").fetchall()
-        if rows:
-            ax.barh([r["name"][:20] for r in rows[:10] if r["value"].isdigit()], [float(r["value"]) for r in rows[:10] if r["value"].isdigit()], color="#10b981")
-            ax.set_title("Employment Overview")
-        else:
-            ax.text(0.5, 0.5, "No data", ha="center", va="center")
-    
-    elif chart_name == "climate_summary":
-        rows = conn.execute("SELECT * FROM indicators WHERE category = 'Climate' ORDER BY name").fetchall()
-        if rows:
-            values = [float(r["value"]) for r in rows if r["value"].replace(".", "").replace("-", "").isdigit()][:10]
-            labels = [r["name"][:15] for r in rows][:len(values)]
-            ax.bar(labels, values, color="#f59e0b")
-            ax.set_title("Climate Summary")
-            ax.tick_params(axis="x", rotation=45)
-        else:
-            ax.text(0.5, 0.5, "No data", ha="center", va="center")
-    
-    elif chart_name == "unemployment_trend":
-        rows = conn.execute("SELECT * FROM indicators WHERE name LIKE '%unemployment%' ORDER BY vintage").fetchall()
-        if rows:
-            ax.plot([r["vintage"] for r in rows], [float(r["value"]) for r in rows], marker="o", color="#ef4444")
-            ax.set_title("Unemployment Trend")
-            ax.set_ylabel("Rate (%)")
-        else:
-            ax.text(0.5, 0.5, "No data", ha="center", va="center")
-    
-    elif chart_name == "wage_trend":
-        rows = conn.execute("SELECT * FROM indicators WHERE name LIKE '%wage%' ORDER BY vintage").fetchall()
-        if rows:
-            ax.plot([r["vintage"] for r in rows], [float(r["value"]) for r in rows], marker="s", color="#38bdf8")
-            ax.set_title("Wage Trend")
-            ax.set_ylabel("Weekly Wage ($)")
-        else:
-            ax.text(0.5, 0.5, "No data", ha="center", va="center")
-    
-    elif chart_name == "income_overview":
-        rows = conn.execute("SELECT * FROM indicators WHERE name LIKE '%income%' ORDER BY name").fetchall()
-        if rows:
-            values = [float(r["value"]) for r in rows if r["value"].isdigit()][:10]
-            labels = [r["name"][:15] for r in rows][:len(values)]
-            ax.barh(labels, values, color="#10b981")
-            ax.set_title("Income Overview")
-        else:
-            ax.text(0.5, 0.5, "No data", ha="center", va="center")
-    
-    elif chart_name == "housing_overview":
-        rows = conn.execute("SELECT * FROM indicators WHERE category = 'Housing' ORDER BY name").fetchall()
-        if rows:
-            values = [float(r["value"]) for r in rows if r["value"].isdigit()][:10]
-            labels = [r["name"][:15] for r in rows][:len(values)]
-            ax.barh(labels, values, color="#f59e0b")
-            ax.set_title("Housing Overview")
-        else:
-            ax.text(0.5, 0.5, "No data", ha="center", va="center")
-    
-    elif chart_name == "demographics":
-        rows = conn.execute("SELECT * FROM indicators WHERE category = 'Demographics' ORDER BY name").fetchall()
-        if rows:
-            values = [float(r["value"]) for r in rows if r["value"].isdigit()][:10]
-            labels = [r["name"][:15] for r in rows][:len(values)]
-            ax.bar(labels, values, color="#38bdf8")
-            ax.set_title("Demographics")
-            ax.tick_params(axis="x", rotation=45)
-        else:
-            ax.text(0.5, 0.5, "No data", ha="center", va="center")
-    
-    elif chart_name == "education_health":
-        rows = conn.execute("SELECT * FROM indicators WHERE category IN ('Education', 'Health') ORDER BY category, name").fetchall()
-        if rows:
-            values = [float(r["value"]) for r in rows if r["value"].isdigit()][:10]
-            labels = [r["name"][:15] for r in rows][:len(values)]
-            ax.bar(labels, values, color="#a855f7")
-            ax.set_title("Education & Health")
-            ax.tick_params(axis="x", rotation=45)
-        else:
-            ax.text(0.5, 0.5, "No data", ha="center", va="center")
-    
-    elif chart_name == "traffic_overview":
-        rows = conn.execute("SELECT * FROM indicators WHERE category = 'Transportation' ORDER BY name").fetchall()
-        if rows:
-            values = [float(r["value"]) for r in rows if r["value"].isdigit()][:10]
-            labels = [r["name"][:15] for r in rows][:len(values)]
-            ax.barh(labels, values, color="#10b981")
-            ax.set_title("Traffic Overview")
-        else:
-            ax.text(0.5, 0.5, "No data", ha="center", va="center")
-    
-    elif chart_name == "schools_by_type":
-        rows = conn.execute("SELECT * FROM indicators WHERE name LIKE 'schools_%' ORDER BY name").fetchall()
-        if rows:
-            ax.pie([float(r["value"]) for r in rows if r["value"].isdigit()], labels=[r["name"] for r in rows if r["value"].isdigit()], autopct="%1.0f%%")
-            ax.set_title("Schools by Type")
-        else:
-            ax.text(0.5, 0.5, "No data", ha="center", va="center")
-    
-    elif chart_name == "infrastructure":
-        rows = conn.execute("SELECT * FROM indicators WHERE category = 'Infrastructure' ORDER BY name").fetchall()
-        if rows:
-            values = [float(r["value"]) for r in rows if r["value"].isdigit()][:10]
-            labels = [r["name"][:15] for r in rows][:len(values)]
-            ax.barh(labels, values, color="#f59e0b")
-            ax.set_title("Infrastructure")
-        else:
-            ax.text(0.5, 0.5, "No data", ha="center", va="center")
-    
-    else:
-        ax.text(0.5, 0.5, f"Unknown chart: {chart_name}", ha="center", va="center")
-    
-    conn.close()
-    plt.tight_layout()
-    
-    # Save to bytes
-    buf = io.BytesIO()
-    fig.savefig(buf, format="png", dpi=100, bbox_inches="tight")
-    plt.close(fig)
-    buf.seek(0)
-    
-    return StreamingResponse(buf, media_type="image/png")
+    png_data = charts.generate_chart(DB_PATH, chart_name)
 
+    if png_data is None:
+        raise HTTPException(status_code=404, detail=f"Chart not found or no data: {chart_name}")
 
-# ── Dashboard Renderer ────────────────────────────────────────────────────
-def _render_dashboard(
-    rows: list[dict],
-    freshness: str,
-    category_counts: dict[str, int],
-    disagreements: list[dict],
-    timeline: list[dict],
-) -> str:
-    """Render the dashboard HTML."""
-    # CSS loaded from portal.css if available
-    css_path = Path(__file__).resolve().parent / "portal.css"
-    if css_path.exists():
-        css_style = f"<style>{css_path.read_text()}</style>"
-    else:
-        # Inline minimal CSS
-        css_style = """<style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-       background: #f8fafc; color: #1e293b; line-height: 1.6; }
-.header { background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
-          color: white; padding: 2rem; text-align: center; }
-.container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; }
-.card { background: white; border-radius: 8px; padding: 1.25rem;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-.stat { text-align: center; padding: 1rem; }
-.stat-value { font-size: 1.5rem; font-weight: bold; color: #0f172a; }
-.stat-label { font-size: 0.8rem; color: #64748b; }
-</style>"""
+    return StreamingResponse(
+        io.BytesIO(png_data),
+        media_type="image/png",
+        headers={"Cache-Control": "public, max-age=3600"},
+    )
 
-    html_parts = [
-        "<!DOCTYPE html>",
-        "<html><head><title>Project Volusia - Dashboard</title>",
-        css_style,
-        "</head><body>",
-        '<div class="header">',
-        "<h1>Project Volusia</h1>",
-        "<p>Open Data Portal for Volusia County, Florida</p>",
-        '<div class="stats">',
-        f'<div class="stat"><div class="stat-value">{len(rows)}</div>'
-        f'<div class="stat-label">Indicators</div></div>',
-        f'<div class="stat"><div class="stat-value">{len(category_counts)}</div>'
-        f'<div class="stat-label">Categories</div></div>',
-        f'<div class="stat"><div class="stat-value">{len(disagreements)}</div>'
-        f'<div class="stat-label">Disagreements</div></div>',
-        f'<div class="stat"><div class="stat-value">{freshness[:10] if freshness != "N/A" else "N/A"}</div>'
-        f'<div class="stat-label">Last Updated</div></div>',
-        "</div>",
-        "</div>",
-        '<div class="container">',
-    ]
-
-    # Timeline if available
-    if timeline:
-        html_parts.append('<h2 style="margin-top: 2rem; margin-bottom: 1rem;">Recent Refreshes</h2>')
-        html_parts.append('<table style="width:100%; border-collapse:collapse;">')
-        html_parts.append('<tr><th style="text-align:left;padding:0.5rem;">Run ID</th>'
-                         '<th style="text-align:right;padding:0.5rem;">Duration</th>'
-                         '<th style="text-align:right;padding:0.5rem;">Status</th>'
-                         '<th style="text-align:right;padding:0.5rem;">Indicators</th></tr>')
-        for t in timeline[:10]:
-            html_parts.append(f'<tr><td style="padding:0.5rem;">{t.get("run_id", "N/A")[:12]}</td>'
-                            f'<td style="text-align:right;padding:0.5rem;">{t.get("duration_ms", 0)}ms</td>'
-                            f'<td style="text-align:right;padding:0.5rem;">{t.get("status", "N/A")}</td>'
-                            f'<td style="text-align:right;padding:0.5rem;">{t.get("indicators_count", 0)}</td></tr>')
-        html_parts.append("</table>")
-
-    # Categories
-    for cat, items in sorted((c, [i for i in rows if i.get("category") == c]) for c in category_counts):
-        html_parts.append(f'<div class="category"><h2>{cat} ({len(items)} indicators)</h2>')
-        html_parts.append('<div class="grid">')
-        for item in items:
-            name = item.get("name", "")
-            value = item.get("value", "N/A")
-            unit = item.get("unit", "")
-            source = item.get("source", "")
-            vintage = item.get("vintage", "")
-            fetched = (item.get("fetched_at", "") or "")[:10]
-            desc = item.get("description", "")
-            
-            html_parts.append(
-                '<div class="card">'
-                f'<div class="card-name" style="font-size:0.85rem; color:#64748b;">{name}</div>'
-                f'<div class="card-value" style="font-size:1.75rem; font-weight:700;">{value}</div>'
-                f'<div class="card-unit" style="font-size:0.85rem; color:#475569;">{unit}</div>'
-                f'<div class="card-meta" style="margin-top:0.75rem; padding-top:0.75rem; border-top:1px solid #f1f5f9; font-size:0.75rem; color:#94a3b8;">'
-                f'Source: {source} ({vintage}) · Refreshed: {fetched}'
-                f'</div></div>'
-            )
-        html_parts.append('</div></div>')
-
-    html_parts.append('</div></body></html>')
-    return "\n".join(html_parts)
 
 
 @app.get("/review")
@@ -773,117 +545,52 @@ async def citations_page():
 @app.get("/geoint")
 async def geoint_page():
     """GEOINT surface page."""
-    html = """<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>GEOINT — Project Volusia</title>
-  <style>
-    body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; margin: 0; }
-    .header { background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%); padding: 2rem; text-align: center; }
-    .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; }
-    .card { background: #1e293b; border-radius: 8px; padding: 1.25rem; border: 1px solid #334155; }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <h1>GEOINT Surface</h1>
-    <p>Geospatial intelligence sources</p>
-  </div>
-  <div class="container">
-    <div class="grid">
-      <div class="card"><h3>GIS Layers <span class="badge">9</span><p>ArcGIS, aerial imagery, LiDAR</p></div>
-      <div class="card"><h3>Boundaries <span class="badge">8</span><p>County, municipalities, parcels, ZIP</p></div>
-      <div class="card"><h3>Terrain <span class="badge">6</span><p>Elevation, coastline, USGS</p></div>
-    </div>
-  </div>
-</body>
-</html>"""
-    return HTMLResponse(html)
+    content = """<div class="grid">
+  <div class="card"><h3>GIS Layers <span class="badge">9</span></h3><p>ArcGIS, aerial imagery, LiDAR</p></div>
+  <div class="card"><h3>Boundaries <span class="badge">8</span></h3><p>County, municipalities, parcels, ZIP</p></div>
+  <div class="card"><h3>Terrain <span class="badge">6</span></h3><p>Elevation, coastline, USGS</p></div>
+</div>"""
+    return HTMLResponse(
+        page_templates.render_simple_page("GEOINT Surface", content, subtitle="Geospatial intelligence sources")
+    )
 
 
 @app.get("/osint-recon")
 async def osint_recon_page():
     """OSINT recon page."""
-    html = """<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>OSINT — Project Volusia</title>
-  <style>
-    body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; margin: 0; }
-    .header { background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%); padding: 2rem; text-align: center; }
-    .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <h1>OSINT Recon</h1>
-    <p>Open-source intelligence sources</p>
-  </div>
-  <div class="container">
-    <p>10+ OSINT surfaces scanned including government, law enforcement, economic, education, infrastructure, health/environment, media/social, and technical sources.</p>
-  </div>
-</body>
-</html>"""
-    return HTMLResponse(html)
+    content = (
+        "<p>10+ OSINT surfaces scanned including government, law enforcement, "
+        "economic, education, infrastructure, health/environment, media/social, "
+        "and technical sources.</p>"
+    )
+    return HTMLResponse(
+        page_templates.render_simple_page("OSINT Recon", content, subtitle="Open-source intelligence sources")
+    )
 
 
 @app.get("/osint-report")
 async def osint_report_page():
     """OSINT report page."""
-    html = """<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>OSINT Report — Project Volusia</title>
-  <style>
-    body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; margin: 0; }
-    .header { background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%); padding: 2rem; text-align: center; }
-    .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <h1>OSINT Recon Report</h1>
-    <p>Full recon report with key findings</p>
-  </div>
-  <div class="container">
-    <p>Key findings from OSINT research including Volusia County AI data center ban, Farmton development, Amazon facility valuation, school district grades, aquifer designation, hospital data, COVID statistics, broadband coverage, and coastline information.</p>
-  </div>
-</body>
-</html>"""
-    return HTMLResponse(html)
+    content = (
+        "<p>Key findings from OSINT research including Volusia County AI data center ban, "
+        "Farmton development, Amazon facility valuation, school district grades, aquifer "
+        "designation, hospital data, COVID statistics, broadband coverage, and coastline "
+        "information.</p>"
+    )
+    return HTMLResponse(
+        page_templates.render_simple_page("OSINT Recon Report", content, subtitle="Full recon report with key findings")
+    )
 
 
 @app.get("/data-explorer")
 async def data_explorer_page():
     """Data explorer page."""
-    html = """<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Data Explorer — Project Volusia</title>
-  <style>
-    body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; margin: 0; }
-    .header { background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%); padding: 2rem; text-align: center; }
-    .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <h1>Data Explorer</h1>
-    <p>Interactive data table with filtering</p>
-  </div>
-  <div class="container">
-    <p>Use the API to explore data: <code>/api/indicators?category=Economy</code></p>
-    <p>Search: <code>/api/search?q=population</code></p>
-    <p>Export: <code>/api/export/full?format=json</code></p>
-  </div>
-</body>
-</html>"""
-    return HTMLResponse(html)
+    content = """<p>Use the API to explore data: <code>/api/indicators?category=Economy</code></p>
+<p>Search: <code>/api/search?q=population</code></p>
+<p>Export: <code>/api/export/full?format=json</code></p>"""
+    return HTMLResponse(
+        page_templates.render_simple_page("Data Explorer", content, subtitle="Interactive data table with filtering")
+    )
 
 
 @app.get("/contribute")
@@ -1014,13 +721,8 @@ async def dashboard_page():
 @app.get("/api/citations")
 async def api_citations():
     """Citation validation API endpoint."""
-    import sqlite3
-    DB_PATH = Path(__file__).resolve().parent / "volusia.db"
-    conn = sqlite3.connect(str(DB_PATH))
-    conn.row_factory = sqlite3.Row
-    
-    rows = conn.execute("SELECT * FROM indicators ORDER BY category, name").fetchall()
-    
+    rows = _db_query("SELECT * FROM indicators ORDER BY category, name")
+
     results = []
     for row in rows:
         row_dict = dict(row)
@@ -1057,9 +759,7 @@ async def api_citations():
             "score": max(0, score),
             "issues": issues,
         })
-    
-    conn.close()
-    
+
     avg_score = sum(r["score"] for r in results) / len(results) if results else 0
     
     return JSONResponse({
@@ -1120,9 +820,78 @@ async def trend_indicator(name: str = ""):
 
 @app.get("/api/correlation")
 async def correlation_analysis():
-    """Get cross-category correlation data."""
-    # Simple correlation based on time_series data
-    return JSONResponse({"message": "Correlation analysis endpoint", "status": "implemented"})
+    """Cross-indicator correlation analysis using time_series data.
+
+    Computes Pearson correlation between every pair of indicators that
+    share ≥3 vintage points in the time_series table. Returns the top
+    positive and negative correlations.
+    """
+    import math
+
+    rows = _db_query("""
+        SELECT indicator_name, vintage, value
+        FROM time_series
+        WHERE value IS NOT NULL AND vintage IS NOT NULL
+        ORDER BY indicator_name, vintage
+    """)
+
+    # Group values by indicator
+    series: dict[str, list[tuple[str, float]]] = {}
+    for r in rows:
+        name = r["indicator_name"]
+        try:
+            val = float(r["value"])
+        except (TypeError, ValueError):
+            continue
+        series.setdefault(name, []).append((r["vintage"], val))
+
+    # Only keep indicators with ≥3 data points
+    series = {k: v for k, v in series.items() if len(v) >= 3}
+
+    def _pearson(pairs_a: list[tuple[str, float]], pairs_b: list[tuple[str, float]]) -> float | None:
+        """Pearson r over shared vintages. Returns None if <3 shared points."""
+        val_map = {v: val for v, val in pairs_a}
+        shared = [(val_map[v], val) for v, val in pairs_b if v in val_map]
+        n = len(shared)
+        if n < 3:
+            return None
+        xs = [p[0] for p in shared]
+        ys = [p[1] for p in shared]
+        mean_x = sum(xs) / n
+        mean_y = sum(ys) / n
+        cov = sum((x - mean_x) * (y - mean_y) for x, y in shared)
+        std_x = math.sqrt(sum((x - mean_x) ** 2 for x in xs))
+        std_y = math.sqrt(sum((y - mean_y) ** 2 for y in ys))
+        if std_x == 0 or std_y == 0:
+            return None
+        return cov / (std_x * std_y)
+
+    names = sorted(series.keys())
+    correlations: list[dict[str, Any]] = []
+    for i, a in enumerate(names):
+        for b in names[i + 1:]:
+            r = _pearson(series[a], series[b])
+            if r is not None:
+                correlations.append({
+                    "indicator_a": a,
+                    "indicator_b": b,
+                    "correlation_r": round(r, 4),
+                    "shared_points": len({v for v, _ in series[a]} & {v for v, _ in series[b]}),
+                    "strength": "strong" if abs(r) >= 0.7 else ("moderate" if abs(r) >= 0.4 else "weak"),
+                    "direction": "positive" if r > 0 else "negative",
+                })
+
+    # Sort by |r| descending
+    correlations.sort(key=lambda c: abs(c["correlation_r"]), reverse=True)
+
+    return JSONResponse({
+        "total_pairs": len(correlations),
+        "top_positive": [c for c in correlations if c["direction"] == "positive"][:10],
+        "top_negative": [c for c in correlations if c["direction"] == "negative"][:10],
+        "all_pairs": correlations[:50],  # Cap response size
+        "indicators_analyzed": len(names),
+        "min_shared_points": 3,
+    })
 
 
 @app.get("/api/export/full")
@@ -1159,7 +928,7 @@ async def full_export(format: str = "json"):
 @app.get("/api/datasets")
 async def datasets_history():
     """Get dataset history."""
-    rows = _db_query("SELECT * FROM datasets ORDER BY created_at DESC LIMIT 50")
+    rows = _db_query("SELECT * FROM datasets ORDER BY fetched_at DESC LIMIT 50")
     return JSONResponse(rows)
 
 
