@@ -39,7 +39,7 @@ jobs:
           cache: 'pip'
       
       - name: Install ruff
-        run: pip install ruff==0.8.4
+        run: pip install ruff==0.16.4
       
       - name: Run ruff format check
         run: ruff format --check .
