@@ -1,22 +1,26 @@
-"""
-Project Volusia — Systems Integration Tests
+"""Project Volusia — Systems Integration Tests
 Tests the integration between pipeline, portal, and data sources.
+
+Imports volusia_data.systems_integration via the package so pytest-cov
+counts it in the CI coverage report (a top-level sys.path import would
+leave the module invisible to --cov=volusia_data, understating coverage).
 """
 
 import hashlib
 import sqlite3
+import sys
 from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 
+# Ensure Tools/ is importable for the package import below.
+TOOLS = Path(__file__).resolve().parent.parent / "Tools"
+if str(TOOLS) not in sys.path:
+    sys.path.insert(0, str(TOOLS))
 
-# Import the system under test
-import sys
-
-sys.path.insert(0, str(Path(__file__).parent.parent / "Tools" / "volusia_data"))
-
-from systems_integration import SystemsIntegration
+from volusia_data import systems_integration  # noqa: E402
+from volusia_data.systems_integration import SystemsIntegration  # noqa: E402
 
 
 @pytest.fixture()
@@ -28,6 +32,9 @@ def seeded_db(tmp_path, monkeypatch):
     Tools/volusia_data/volusia.db is gitignored and must not be a dependency.
     """
     from datetime import datetime, timezone
+
+    sys.path.insert(0, str(TOOLS))
+    import sqlite3
 
     db = tmp_path / "volusia.db"
     conn = sqlite3.connect(db)
@@ -85,7 +92,7 @@ def seeded_db(tmp_path, monkeypatch):
     )
     conn.commit()
     conn.close()
-    monkeypatch.setattr("systems_integration.DB_PATH", db)
+    monkeypatch.setattr("volusia_data.systems_integration.DB_PATH", db)
     return db
 
 
@@ -157,9 +164,7 @@ class TestSystemsIntegration:
 
     def test_checksum_verification(self, seeded_db):
         """Verify checksum validation works."""
-        from systems_integration import DataValidator
-
-        result = DataValidator.verify_checksums()
+        result = systems_integration.DataValidator.verify_checksums()
 
         assert isinstance(result, dict)
         assert "total" in result
@@ -174,7 +179,7 @@ class TestIntegrationAPI:
     @pytest.fixture
     def client(self):
         """Create test client."""
-        from portal_app import app
+        from volusia_data.portal_app import app
 
         return TestClient(app)
 
