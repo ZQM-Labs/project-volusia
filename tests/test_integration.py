@@ -93,8 +93,13 @@ class TestSystemsIntegration:
     """Test suite for integrated system components."""
 
     @pytest.fixture
-    def integration(self):
-        """Create integration manager instance."""
+    def integration(self, seeded_db):
+        """Create integration manager against the seeded temp DB.
+
+        Must depend on seeded_db: SystemsIntegration.__init__ captures
+        DB_PATH at instance-creation time, so the monkeypatch has to be
+        in place first.
+        """
         return SystemsIntegration()
 
     def test_check_all_returns_health(self, integration, seeded_db):
