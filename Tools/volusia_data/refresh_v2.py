@@ -301,7 +301,7 @@ def fetch_census_acs() -> bool:
     if not api_key:
         log_fetch("Census ACS", "SKIP", "No CENSUS_API_KEY configured")
         log.info("  SKIP: Set CENSUS_API_KEY environment variable")
-        return False
+        return None  # skipped - missing key is not a failure
 
     # ACS 5-year 2023 — DP02 (employment status), DP05 (race/ethnicity)
     url = "https://api.census.gov/data/2023/acs/acs5"
@@ -446,7 +446,7 @@ def fetch_bls() -> bool:
     if not api_key:
         log_fetch("BLS LAUS", "SKIP", "No BLS_API_KEY configured")
         log.info("  SKIP: Set BLS_API_KEY environment variable")
-        return False
+        return None  # skipped - missing key is not a failure
 
     # LAUS series for Volusia County, FL
     series_id = "LAUST121270000000003"
@@ -538,7 +538,7 @@ def fetch_bea() -> bool:
     if not api_key:
         log_fetch("BEA Regional", "SKIP", "No BEA_API_KEY configured")
         log.info("  SKIP: Set BEA_API_KEY environment variable")
-        return False
+        return None  # skipped - missing key is not a failure
 
     source_name = "BEA Regional"
     log.info(f"Fetching {source_name}...")
