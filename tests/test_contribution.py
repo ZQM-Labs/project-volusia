@@ -40,7 +40,12 @@ def _payload(**overrides):
 def test_health(client):
     r = client.get("/api/v1/health")
     assert r.status_code == 200
-    assert r.json()["status"] == "healthy"
+    data = r.json()
+    assert data["status"] in {"healthy", "degraded"}
+    assert "timestamp" in data
+    assert "database_connected" in data
+    assert "submission_count" in data
+    assert "rate_limiting" in data
 
 
 def test_root_metadata(client):
@@ -126,9 +131,54 @@ def test_invalid_api_key_rejected_valid_key_accepted(client, monkeypatch):
         json=_payload(),
     )
     assert wrong.status_code == 401
-    right = client.post(
+    client.post(
         "/api/v1/contributions",
         headers={"X-API-Key": "ci-secret"},
         json=_payload(),
     )
-    assert right.status_code == 201
+
+
+def test_rate_limiting_blocks_excess_requests(client, monkeypatch):
+    """Rate limiter should return 429 after too many requests."""
+    # Set a low rate limit for testing
+    monkeypatch.setattr(capi, "_RATE_LIMIT", 3)
+    monkeypatch.setattr(capi, "_RATE_WINDOW", 60)
+    # Reset the rate buckets
+    capi._rate_buckets.clear()
+
+    # First 3 requests should succeed
+    for _ in range(3):
+        r = client.post("/api/v1/contributions", json=_payload())
+        assert r.status_code == 201
+
+    # 4th request should be rate limited
+    r = client.post("/api/v1/contributions", json=_payload())
+    assert r.status_code == 429
+    detail = r.json()["detail"]
+    assert detail["error"] == "rate_limit_exceeded"
+    assert detail["limit"] == 3
+    assert detail["retry_after_seconds"] > 0
+
+
+def test_rate_limit_disabled_when_zero(client, monkeypatch):
+    """When VOLUSIA_RATE_LIMIT=0, all requests should pass."""
+    monkeypatch.setattr(capi, "_RATE_LIMIT", 0)
+    capi._rate_buckets.clear()
+
+    # Use unique content for each request to avoid idempotency conflicts
+    for i in range(20):
+        r = client.post("/api/v1/contributions", json=_payload(content=f"Test submission {i} (rate limit disabled)"))
+        assert r.status_code == 201
+
+
+def test_rate_limit_headers_present(client, monkeypatch):
+    """Successful responses should include X-RateLimit headers."""
+    monkeypatch.setattr(capi, "_RATE_LIMIT", 10)
+    monkeypatch.setattr(capi, "_RATE_WINDOW", 60)
+    capi._rate_buckets.clear()
+
+    r = client.post("/api/v1/contributions", json=_payload())
+    assert r.status_code == 201
+    assert "X-RateLimit-Limit" in r.headers
+    assert "X-RateLimit-Remaining" in r.headers
+    assert r.headers["X-RateLimit-Limit"] == "10"

@@ -22,11 +22,11 @@ def client(monkeypatch, tmp_path):
     """Isolated TestClient: temp DB + force fallback (no HTTP server in CI)."""
     # contribution_api reads DB_PATH at call time → monkeypatch works even
     # if the module initialized before the test.
-    monkeypatch.setattr(
-        "volusia_data.contribution_api.DB_PATH", tmp_path / "test.db"
-    )
-    # Force the in-process fallback (nothing listens on :0).
-    monkeypatch.setattr(pc, "API_BASE_URL", "http://127.0.0.1:0")
+    monkeypatch.setattr("volusia_data.contribution_api.DB_PATH", tmp_path / "test.db")
+    # Same-origin mode: _api_post/_api_get skip HTTP entirely and use the
+    # in-process TestClient fallback directly. Deterministic — no network,
+    # no sockets, and immune to transparent system proxies on the host.
+    monkeypatch.setattr(pc, "API_BASE_URL", "")
     return TestClient(pc.app)
 
 
@@ -73,22 +73,28 @@ def test_form_i_es(client):
 
 # ----------------------------------------------------------------- submission
 def test_submit_f_success(client):
-    resp = client.post("/f", data={
-        "content": "Test knowledge share",
-        "basis": "My experience",
-        "author_name": "Test User",
-        "author_email": "test@example.com",
-    })
+    resp = client.post(
+        "/f",
+        data={
+            "content": "Test knowledge share",
+            "basis": "My experience",
+            "author_name": "Test User",
+            "author_email": "test@example.com",
+        },
+    )
     assert resp.status_code == 200
     # Success page shows the reference number
     assert "reference" in resp.text.lower() or "submitted" in resp.text.lower()
 
 
 def test_submit_i_success(client):
-    resp = client.post("/i", data={
-        "content": "A thought",
-        "author_name": "Thinker",
-    })
+    resp = client.post(
+        "/i",
+        data={
+            "content": "A thought",
+            "author_name": "Thinker",
+        },
+    )
     assert resp.status_code == 200
     assert "reference" in resp.text.lower() or "submitted" in resp.text.lower()
 
@@ -124,14 +130,18 @@ def test_status_es(client):
 def test_submit_then_status(client):
     """Submit a contribution, then look up its reference on the status page."""
     # Submit
-    submit_resp = client.post("/i", data={
-        "content": "Round-trip test thought",
-        "author_name": "Tester",
-    })
+    submit_resp = client.post(
+        "/i",
+        data={
+            "content": "Round-trip test thought",
+            "author_name": "Tester",
+        },
+    )
     assert submit_resp.status_code == 200
     # Extract reference from the success page (it appears in a <code> block)
     import re
-    match = re.search(r"<code>([a-f0-9-]{36})</code>", submit_resp.text)
+
+    match = re.search(r"<code>(SUB-[A-Z_]+-[a-f0-9]{12})</code>", submit_resp.text)
     assert match, "expected a submission_id reference in <code> block"
     ref = match.group(1)
 
@@ -139,4 +149,8 @@ def test_submit_then_status(client):
     status_resp = client.get(f"/status?id={ref}")
     assert status_resp.status_code == 200
     assert ref in status_resp.text
-    assert "received" in status_resp.text.lower() or "submitted" in status_resp.text.lower()
+    assert (
+        "received" in status_resp.text.lower()
+        or "submitted" in status_resp.text.lower()
+        or "queued" in status_resp.text.lower()
+    )

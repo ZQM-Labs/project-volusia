@@ -7,16 +7,30 @@ Routes them to the appropriate CGB member for review.
 Run: python Tools/volusia_data/contribution_api.py
 """
 
+__version__ = "1.0.0"
+
+import logging
 import os
+import re
 import sys
 import json
 import sqlite3
+import threading
+import uuid
+from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, Header, Request
+from fastapi import FastAPI, HTTPException, Header, Request, Response
 from fastapi.responses import JSONResponse
+
+# ── Logging ────────────────────────────────────────────────────────────────
+logger = logging.getLogger("volusia.contribution_api")
+logging.basicConfig(
+    level=os.getenv("LOG_LEVEL", "INFO").upper(),
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
 
 # Add Tools dir to path
 TOOLS_DIR = Path(__file__).resolve().parents[1]
@@ -31,11 +45,118 @@ from volusia_data.config import (
 
 app = FastAPI(title="Project Volusia — Contribution API")
 
+# ── Rate Limiting ──────────────────────────────────────────────────────────
+# Simple sliding-window rate limiter (in-memory, per process).
+# Configurable via VOLUSIA_RATE_LIMIT (max requests) and
+# VOLUSIA_RATE_WINDOW (window in seconds). Set VOLUSIA_RATE_LIMIT=0 to disable.
+_RATE_LIMIT = int(os.environ.get("VOLUSIA_RATE_LIMIT", "10"))
+_RATE_WINDOW = int(os.environ.get("VOLUSIA_RATE_WINDOW", "60"))
+_rate_lock = threading.Lock()
+_rate_buckets: dict[str, list[float]] = defaultdict(list)
+
+
+def _rate_check(client_key: str) -> tuple[bool, int, float]:
+    """Return (allowed, remaining, retry_after)."""
+    if _RATE_LIMIT <= 0:
+        return True, -1, 0.0  # disabled
+
+    now = datetime.now(timezone.utc).timestamp()
+    window_start = now - _RATE_WINDOW
+
+    with _rate_lock:
+        hits = _rate_buckets[client_key]
+        # Expire old hits
+        hits[:] = [t for t in hits if t > window_start]
+
+        if len(hits) >= _RATE_LIMIT:
+            oldest = min(hits)
+            retry_after = round(oldest + _RATE_WINDOW - now, 1)
+            remaining = 0
+            return False, remaining, max(retry_after, 0.1)
+
+        hits.append(now)
+        remaining = _RATE_LIMIT - len(hits)
+        return True, remaining, 0.0
+
+
+def _client_key(request: Request) -> str:
+    """Identify client: authenticated API key > X-Forwarded-For > direct IP."""
+    key = request.headers.get("X-API-Key") or ""
+    if key:
+        return f"key:{key}"
+    fwd = request.headers.get("X-Forwarded-For", "")
+    if fwd:
+        return f"ip:{fwd.split(',')[0].strip()}"
+    return f"ip:{request.client.host if request.client else 'unknown'}"
+
 # ── Optional API-key enforcement ────────────────────────────────────────────
 # Set VOLUSIA_API_KEYS (comma-separated) to require a key. Without it,
 # anonymous submissions are allowed — required by the community web form
 # (WEB_FORM_DESIGN.md: "no login required for anonymous submissions").
 ALLOWED_API_KEYS = {k.strip() for k in os.environ.get("VOLUSIA_API_KEYS", "").split(",") if k.strip()}
+
+# Maximum lengths to prevent abuse
+MAX_CONTENT_LENGTH = 50_000
+MAX_AUTHOR_EMAIL = 254  # RFC 5321
+MAX_AUTHOR_NAME = 200
+MAX_IDEMPOTENCY_KEY = 255
+
+# Simple sanitization: strip control characters & limit length
+_SANITIZE_RE = re.compile(r"[\x00-\x1f\x7f-\x9f]")
+
+
+def _sanitize(value: str, max_len: int) -> str:
+    """Strip control characters and truncate to max_len."""
+    if not isinstance(value, str):
+        value = str(value)
+    value = _SANITIZE_RE.sub("", value)
+    return value[:max_len]
+
+
+def _validate_email(email: str) -> str:
+    """Basic email validation + sanitization."""
+    if not email:
+        return ""
+    email = _sanitize(email, MAX_AUTHOR_EMAIL)
+    # Very loose but practical email check
+    if not re.match(r"^[^\s@]+@[^\s@]+\.[^\s@]+$", email):
+        raise HTTPException(status_code=400, detail="author_email is not a valid email address")
+    return email
+
+
+@app.exception_handler(HTTPException)
+async def _http_exception_handler(request: Request, exc: HTTPException):
+    """Centralised exception handler that logs and adds structured responses."""
+    logger.info(
+        "HTTP %s %s → %d (endpoint=%s, path=%s, client=%s)",
+        request.method,
+        request.url.path,
+        exc.status_code,
+        exc.detail if isinstance(exc.detail, str) else "rate_limit_exceeded",
+        request.url.path,
+        _client_key(request),
+    )
+
+    headers: dict[str, str] = {}
+    # Add rate-limit headers on 429
+    if exc.status_code == 429 and isinstance(exc.detail, dict):
+        retry_after = exc.detail.get("retry_after_seconds", 60)
+        headers["Retry-After"] = str(int(retry_after))
+        headers["X-RateLimit-Limit"] = str(_RATE_LIMIT)
+        headers["X-RateLimit-Remaining"] = "0"
+
+        # Maintain backward compatibility: use "detail" key as before,
+    # but enrich with structured error on 429
+    detail = exc.detail if isinstance(exc.detail, dict) else {"message": exc.detail, "error": exc.detail}
+    if exc.status_code == 429 and isinstance(exc.detail, dict):
+        detail = exc.detail  # keep rate-limit dict as detail
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": detail},
+        headers=headers,
+    )
+
 
 # Valid contribution types (aligned with openapi.yaml)
 VALID_CONTRIBUTION_TYPES = [
@@ -119,13 +240,26 @@ async def submit_contribution(request: Request):
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid JSON body")
 
+    # Rate limiting (before expensive work)
+    allowed, remaining, retry_after = _rate_check(_client_key(request))
+    if not allowed:
+        raise HTTPException(
+            status_code=429,
+            detail={
+                "error": "rate_limit_exceeded",
+                "retry_after_seconds": retry_after,
+                "limit": _RATE_LIMIT,
+                "window_seconds": _RATE_WINDOW,
+            },
+        )
+
     check_api_key(request)
 
     contribution_type = body.get("contribution_type", "direct")
     content = body.get("content", body)  # accept full body when no content wrapper
-    idempotency_key = body.get("idempotency_key")
-    author_email = body.get("author_email", "")
-    author_name = body.get("author_name", "")
+    idempotency_key = _sanitize(body.get("idempotency_key") or "", MAX_IDEMPOTENCY_KEY) or None
+    author_email = _validate_email(body.get("author_email", ""))
+    author_name = _sanitize(body.get("author_name", ""), MAX_AUTHOR_NAME)
 
     # Validate contribution type
     if contribution_type not in VALID_CONTRIBUTION_TYPES:
@@ -186,9 +320,8 @@ async def submit_contribution(request: Request):
     elif isinstance(content, str):
         title = content[:100]
 
-    # Generate submission ID
-    ts = datetime.now().strftime("%Y%m%d%H%M%S%f")
-    submission_id = f"SUB-{contribution_type.upper()}-{ts}"
+    # Generate submission ID (UUID-based to prevent collisions on rapid submissions)
+    submission_id = f"SUB-{contribution_type.upper()}-{uuid.uuid4().hex[:12]}"
 
     # Determine routing (primary reviewer)
     reviewer = CONTRIBUTION_ROUTING.get(contribution_type, "Community Liaison")
@@ -236,6 +369,10 @@ async def submit_contribution(request: Request):
         """, (submission_id, contribution_type, json.dumps(content), now, now, reviewer, author_email, author_name, idempotency_key))
         conn.commit()
 
+        logger.info(
+            "Submission created: %s (type=%s, reviewer=%s, client=%s)",
+            submission_id, contribution_type, reviewer, _client_key(request),
+        )
     except sqlite3.IntegrityError as e:
         raise HTTPException(status_code=409, detail=f"Duplicate submission: {e}")
     finally:
@@ -243,17 +380,26 @@ async def submit_contribution(request: Request):
 
     review_by = add_business_days(datetime.now(timezone.utc), 5)
 
-    return JSONResponse(status_code=201, content={
-        "submission_id": submission_id,
-        "status": "queued",
-        "submitted_at": now,
-        "acknowledged_at": now,
-        "estimated_review_by": review_by.isoformat(),
-        "reviewer": reviewer,
-        "fallback_reviewer": fallback_reviewer,
-        "anonymous": not author_email,
-        "message": "Contribution received. You will receive an update within 5 business days.",
-    })
+    resp_headers = {}
+    if _RATE_LIMIT > 0:
+        resp_headers["X-RateLimit-Limit"] = str(_RATE_LIMIT)
+        resp_headers["X-RateLimit-Remaining"] = str(remaining)
+
+    return JSONResponse(
+        status_code=201,
+        content={
+            "submission_id": submission_id,
+            "status": "queued",
+            "submitted_at": now,
+            "acknowledged_at": now,
+            "estimated_review_by": review_by.isoformat(),
+            "reviewer": reviewer,
+            "fallback_reviewer": fallback_reviewer,
+            "anonymous": not author_email,
+            "message": "Contribution received. You will receive an update within 5 business days.",
+        },
+        headers=resp_headers,
+    )
 
 
 @app.get("/api/v1/contributions/{submission_id}")
@@ -355,7 +501,31 @@ async def update_contribution(submission_id: str, request: Request):
 
 @app.get("/api/v1/health")
 async def health():
-    return {"status": "healthy", "timestamp": _now()}
+    """Health check with database connectivity and submission stats."""
+    db_ok = False
+    submission_count = 0
+    try:
+        conn = _db()
+        try:
+            row = conn.execute("SELECT COUNT(*) as cnt FROM submissions").fetchone()
+            submission_count = row["cnt"] if row else 0
+            db_ok = True
+        finally:
+            conn.close()
+    except Exception:
+        pass
+
+    return {
+        "status": "healthy" if db_ok else "degraded",
+        "timestamp": _now(),
+        "database_connected": db_ok,
+        "submission_count": submission_count,
+        "rate_limiting": {
+            "enabled": _RATE_LIMIT > 0,
+            "limit": _RATE_LIMIT,
+            "window_seconds": _RATE_WINDOW,
+        },
+    }
 
 
 @app.get("/")

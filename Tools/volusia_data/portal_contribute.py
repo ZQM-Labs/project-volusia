@@ -6,12 +6,14 @@ into the contribution API. Coexists with portal_app.py (mountable router)
 and runs standalone via ``python portal_contribute.py`` (port 8791).
 
 Integration strategy — contribute logic is never duplicated:
-  1. HTTP first: POST/GET against the contribution API
-     (VOLUSIA_CONTRIBUTION_API, default http://127.0.0.1:8790) — the
-     stable, versioned /api/v1 contract.
-  2. In-process fallback: if no API process is reachable, calls go
-     through FastAPI's TestClient against contribution_api.app directly.
-     Same validation, same SQLite DB, same response shapes.
+  1. HTTP first: if VOLUSIA_CONTRIBUTION_API is set (e.g.
+     http://127.0.0.1:8790), POST/GET go against the stable, versioned
+     /api/v1 contract. Only JSON responses are trusted; gateway garbage
+     falls through to the fallback below.
+  2. Same-origin / in-process fallback: when VOLUSIA_CONTRIBUTION_API is
+     unset, or the API process is unreachable, calls go through FastAPI's
+     TestClient against contribution_api.app directly. Same validation,
+     same SQLite DB, same response shapes.
 
 Collaboration note: contribution_api.py is owned by another writer
 (in-flight edits all session). This module only imports it and speaks its
@@ -20,20 +22,27 @@ HTTP contract; it never modifies that file.
 
 from __future__ import annotations
 
+__version__ = "1.0.0"
+
 import html
 import os
 import uuid
 
 import requests
-from fastapi import APIRouter, FastAPI, Form
+from fastapi import APIRouter, FastAPI, Form, Request
 from fastapi.responses import HTMLResponse
 
 # ------------------------------------------------------------------ config
-API_BASE_URL = os.environ.get(
-    "VOLUSIA_CONTRIBUTION_API", ""
-).rstrip("/")
+API_BASE_URL = os.environ.get("VOLUSIA_CONTRIBUTION_API", "").rstrip("/")
 STANDALONE_PORT = int(os.environ.get("VOLUSIA_CONTRIBUTE_PORT", "8791"))
 HTTP_TIMEOUT = 3.0  # seconds; keep the UI responsive before fallback
+# Session with proxy resolution disabled: the contribution API is always
+# local (127.0.0.1), but some hosts run transparent system proxies that
+# intercept localhost traffic and answer with gateway errors instead of
+# connection failures (observed on this network: 502 HTML for any port).
+# trust_env=False makes the fallback contract deterministic.
+_HTTP = requests.Session()
+_HTTP.trust_env = False
 CONTENT_MAX = 5000
 BASIS_MAX = 2000
 
@@ -70,12 +79,8 @@ def _esc(value: str) -> str:
 def _page(title: str, body: str, lang: str = "en") -> str:
     nav = NAV_ES if lang == "es" else NAV_EN
     prefix = "/es" if lang == "es" else ""
-    other = f'<a href="{_esc(_alt(prefix))}">EN</a>' if lang == "es" else (
-        '<a href="/es">ES</a>'
-    )
-    items = "".join(
-        f'<a href="{_esc(href)}">{_esc(label)}</a>' for href, label in nav
-    )
+    other = f'<a href="{_esc(_alt(prefix))}">EN</a>' if lang == "es" else ('<a href="/es">ES</a>')
+    items = "".join(f'<a href="{_esc(href)}">{_esc(label)}</a>' for href, label in nav)
     return f"""<!doctype html>
 <html lang="{lang}">
 <head>
@@ -192,20 +197,24 @@ def _testclient():
 
 def _api_post(payload: dict) -> tuple[int, dict, str]:
     """Submit via HTTP; fall back to in-process app if unreachable.
-    
+
     Returns (status_code, body, via) where via is "http" or "local".
     """
-    # Use relative URL if API_BASE_URL is empty (same-origin)
-    url = f"{API_BASE_URL}/api/v1/contributions" if API_BASE_URL else "/api/v1/contributions"
-    try:
-        resp = requests.post(
-            url,
-            json=payload,
-            timeout=HTTP_TIMEOUT,
-        )
-        return resp.status_code, _safe_json(resp), "http"
-    except requests.RequestException:
-        pass
+    if API_BASE_URL:
+        try:
+            resp = _HTTP.post(
+                f"{API_BASE_URL}/api/v1/contributions",
+                json=payload,
+                timeout=HTTP_TIMEOUT,
+            )
+            body = _safe_json(resp)
+            # Trust only responses that plausibly came from our JSON API.
+            # Gateway/proxy errors (502/503 HTML, empty bodies) fall through
+            # to the in-process fallback instead of surfacing as failures.
+            if resp.status_code != 404 and body:
+                return resp.status_code, body, "http"
+        except requests.RequestException:
+            pass
     try:
         resp = _testclient().post("/api/v1/contributions", json=payload)
         return resp.status_code, _safe_json(resp), "local"
@@ -215,15 +224,17 @@ def _api_post(payload: dict) -> tuple[int, dict, str]:
 
 def _api_get(submission_id: str) -> tuple[int, dict, str]:
     """Fetch one submission via HTTP; same fallback contract as _api_post."""
-    url = f"{API_BASE_URL}/api/v1/contributions/{submission_id}" if API_BASE_URL else f"/api/v1/contributions/{submission_id}"
-    try:
-        resp = requests.get(
-            url,
-            timeout=HTTP_TIMEOUT,
-        )
-        return resp.status_code, _safe_json(resp), "http"
-    except requests.RequestException:
-        pass
+    if API_BASE_URL:
+        try:
+            resp = _HTTP.get(
+                f"{API_BASE_URL}/api/v1/contributions/{submission_id}",
+                timeout=HTTP_TIMEOUT,
+            )
+            body = _safe_json(resp)
+            if resp.status_code != 404 and body:
+                return resp.status_code, body, "http"
+        except requests.RequestException:
+            pass
     try:
         resp = _testclient().get(f"/api/v1/contributions/{submission_id}")
         return resp.status_code, _safe_json(resp), "local"
@@ -232,8 +243,7 @@ def _api_get(submission_id: str) -> tuple[int, dict, str]:
 
 
 # ---------------------------------------------------------------- forms
-def _form_page(pathway: str, lang: str = "en", error: str = "",
-               ok_ref: str = "") -> str:
+def _form_page(pathway: str, lang: str = "en", error: str = "", ok_ref: str = "") -> str:
     """Render Pathway F/I form. pathway: 'f' or 'i'."""
     f = pathway.lower()
     pfx = "/es" if lang == "es" else ""
@@ -273,16 +283,20 @@ def _form_page(pathway: str, lang: str = "en", error: str = "",
         f'<a href="{pfx}/status?id={_esc(ok_ref)}">'
         + ("Check its status" if lang != "es" else "Consultar estado")
         + "</a></div>"
-        if ok_ref else ""
+        if ok_ref
+        else ""
     )
     basis_html = (
         f'<label for="basis">{_esc(labels["f_basis"])}</label>\n'
         f'<textarea id="basis" name="basis" rows="3" maxlength="{BASIS_MAX}"></textarea>\n'
         f'<p class="hint">{_esc(labels["f_basis_hint"])}</p>'
-        if is_f else ""
+        if is_f
+        else ""
     )
     idem = uuid.uuid4().hex
-    return _page(title, f"""
+    return _page(
+        title,
+        f"""
 {err_html}{ok_html}
 <form method="post" action="{pfx}/{f}">
 <input type="hidden" name="idempotency_key" value="{idem}">
@@ -299,32 +313,28 @@ def _form_page(pathway: str, lang: str = "en", error: str = "",
  autocomplete="off">
 <button type="submit">{_esc(labels["submit"])}</button>
 </form>
-""", lang)
+""",
+        lang,
+    )
 
 
-def _handle_form(pathway: str, lang: str, content: str, basis: str,
-                 author_name: str, author_email: str,
-                 idempotency_key: str) -> str:
+def _handle_form(
+    pathway: str, lang: str, content: str, basis: str, author_name: str, author_email: str, idempotency_key: str
+) -> str:
     """Validate, submit to the contribution API, return HTML result.
 
     The contribution API has no ``basis`` field (writer's contract), so
     basis is folded into content as a trailing block when present.
     """
     f = pathway.lower()
-    pfx = "/es" if lang == "es" else ""
     content = (content or "").strip()
     if not content:
-        return _form_page(f, lang,
-                          error="Content is required." if lang != "es"
-                                else "El contenido es obligatorio.")
+        return _form_page(f, lang, error="Content is required." if lang != "es" else "El contenido es obligatorio.")
     if len(content) > CONTENT_MAX:
-        return _form_page(f, lang,
-                          error="Content is too long." if lang != "es"
-                                else "El contenido es demasiado largo.")
+        return _form_page(f, lang, error="Content is too long." if lang != "es" else "El contenido es demasiado largo.")
     basis = (basis or "").strip()
     if basis:
-        block = f"{content}\n\nBasis: {basis}" if lang != "es" \
-            else f"{content}\n\nFundamento: {basis}"
+        block = f"{content}\n\nBasis: {basis}" if lang != "es" else f"{content}\n\nFundamento: {basis}"
     else:
         block = content
     payload = {
@@ -360,8 +370,7 @@ def form_f_post(
     author_email: str = Form(""),
     idempotency_key: str = Form(""),
 ) -> HTMLResponse:
-    return HTMLResponse(_handle_form("f", "en", content, basis, author_name,
-                                     author_email, idempotency_key))
+    return HTMLResponse(_handle_form("f", "en", content, basis, author_name, author_email, idempotency_key))
 
 
 @router.get("/es/f", response_class=HTMLResponse)
@@ -377,8 +386,7 @@ def form_f_es_post(
     author_email: str = Form(""),
     idempotency_key: str = Form(""),
 ) -> HTMLResponse:
-    return HTMLResponse(_handle_form("f", "es", content, basis, author_name,
-                                     author_email, idempotency_key))
+    return HTMLResponse(_handle_form("f", "es", content, basis, author_name, author_email, idempotency_key))
 
 
 @router.get("/i", response_class=HTMLResponse)
@@ -393,8 +401,7 @@ def form_i_post(
     author_email: str = Form(""),
     idempotency_key: str = Form(""),
 ) -> HTMLResponse:
-    return HTMLResponse(_handle_form("i", "en", content, "", author_name,
-                                     author_email, idempotency_key))
+    return HTMLResponse(_handle_form("i", "en", content, "", author_name, author_email, idempotency_key))
 
 
 @router.get("/es/i", response_class=HTMLResponse)
@@ -409,8 +416,7 @@ def form_i_es_post(
     author_email: str = Form(""),
     idempotency_key: str = Form(""),
 ) -> HTMLResponse:
-    return HTMLResponse(_handle_form("i", "es", content, "", author_name,
-                                     author_email, idempotency_key))
+    return HTMLResponse(_handle_form("i", "es", content, "", author_name, author_email, idempotency_key))
 
 
 # ------------------------------------------------------------------ status
@@ -425,12 +431,14 @@ def _status_page(submission_id: str, body: dict, lang: str) -> str:
         ref = body.get("submission_id", submission_id)
         result = (
             f'<div class="ok">Reference: <code>{_esc(ref)}</code><br>'
-            f'Status: <strong>{_esc(status)}</strong><br>'
-            f'Acknowledged: {_esc(ack)}<br>'
-            f'Review by: {_esc(eta)}</div>'
+            f"Status: <strong>{_esc(status)}</strong><br>"
+            f"Acknowledged: {_esc(ack)}<br>"
+            f"Review by: {_esc(eta)}</div>"
         )
     title = "Check submission status" if lang != "es" else "Consultar estado"
-    return _page(title, f"""
+    return _page(
+        title,
+        f"""
 {result}
 <form method="get" action="{pfx}/status">
 <label for="id">Submission ID</label>
@@ -438,7 +446,9 @@ def _status_page(submission_id: str, body: dict, lang: str) -> str:
  value="{_esc(submission_id)}" required>
 <button type="submit">{"Check" if lang != "es" else "Consultar"}</button>
 </form>
-""", lang)
+""",
+        lang,
+    )
 
 
 @router.get("/status", response_class=HTMLResponse)
@@ -462,12 +472,15 @@ def status_es(req: Request) -> HTMLResponse:
 
 
 # --------------------------------------------------------------- runner
+app.include_router(router)  # Register routes AFTER all decorators have executed
+
+
 def main():
     """Run the contribute portal (python -m ...portal_contribute)."""
     import uvicorn
+
     port = int(os.environ.get("CONTRIBUTE_PORT", "8791"))
-    uvicorn.run("volusia_data.portal_contribute:app", host="127.0.0.1",
-                port=port, reload=False)
+    uvicorn.run("volusia_data.portal_contribute:app", host="127.0.0.1", port=port, reload=False)
 
 
 if __name__ == "__main__":

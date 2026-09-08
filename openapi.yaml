@@ -5,12 +5,13 @@ info:
     The machine-readable interface for querying Volusia County open data
     and submitting contributions to the Project Volusia knowledge system.
 
-    Two main surfaces:
-    1. **Data API** — read-only access to published indicators, datasets, and health
+    Three main surfaces:
+    1. **Data API** — read-only access to published indicators, datasets, charts, and analysis
     2. **Contribution API** — submit new data, analysis, tools, maps, and community knowledge
+    3. **Health API** — system health, status, and data freshness monitoring
 
     Full documentation: see AGENTIC_CONTRIBUTION_STRATEGY.md
-  version: "2026-09-03"
+  version: "2026-09-06"
   contact:
     name: Project Volusia Community Liaison
     email: community@project-volusia.org
@@ -25,32 +26,51 @@ servers:
 
 tags:
   - name: Data
-    description: Read-only access to published indicators and datasets
+    description: Read-only access to published indicators, datasets, and analysis
   - name: Health
-    description: System health and status
+    description: System health, status, and data freshness
   - name: Contributions
-    description: Submit new contributions (requires API key for write operations)
+    description: Submit new contributions (anonymous or API-key authenticated)
 
 paths:
   /indicators:
     get:
       tags: [Data]
-      summary: List all published indicators
-      description: Returns all verified indicators for Volusia County
+      summary: List published indicators
+      description: |
+        Returns verified indicators for Volusia County with optional filtering
+        and pagination. Default page size is 50, max 500.
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50, minimum: 1, maximum: 500 }
+        - name: offset
+          in: query
+          schema: { type: integer, default: 0, minimum: 0 }
+        - name: category
+          in: query
+          schema: { type: string }
+          description: Filter by category (e.g., "Demographics", "Economy")
+        - name: source
+          in: query
+          schema: { type: string }
+          description: Filter by source name
       responses:
         "200":
-          description: List of indicators
+          description: Paginated list of indicators
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  count:
-                    type: integer
+                  count: { type: integer, description: "Results in this page" }
+                  total: { type: integer, description: "Total matching indicators" }
+                  limit: { type: integer }
+                  offset: { type: integer }
+                  has_more: { type: boolean }
                   indicators:
                     type: array
-                    items:
-                      $ref: "#/components/schemas/Indicator"
+                    items: { $ref: "#/components/schemas/Indicator" }
 
   /indicators/{name}:
     get:
@@ -60,36 +80,278 @@ paths:
         - name: name
           in: path
           required: true
-          schema:
-            type: string
+          schema: { type: string }
       responses:
         "200":
           description: Indicator details
           content:
             application/json:
-              schema:
-                $ref: "#/components/schemas/Indicator"
+              schema: { $ref: "#/components/schemas/Indicator" }
         "404":
           description: Indicator not found
 
-  /datasets:
+  /search:
     get:
       tags: [Data]
-      summary: List all datasets
+      summary: Search indicators
+      description: Full-text search across indicator names and descriptions
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string, minLength: 1 }
+          description: Search query
+        - name: category
+          in: query
+          schema: { type: string }
+        - name: source
+          in: query
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50, minimum: 1, maximum: 100 }
       responses:
         "200":
-          description: List of datasets
+          description: Matching indicators
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  count:
-                    type: integer
-                  datasets:
+                  query: { type: string }
+                  total: { type: integer }
+                  results:
+                    type: array
+                    items: { $ref: "#/components/schemas/Indicator" }
+
+  /compare:
+    get:
+      tags: [Data]
+      summary: Compare two indicators side by side
+      parameters:
+        - name: name1
+          in: query
+          required: true
+          schema: { type: string }
+        - name: name2
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Both indicators
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  indicator1: { $ref: "#/components/schemas/Indicator" }
+                  indicator2: { $ref: "#/components/schemas/Indicator" }
+        "400":
+          description: Missing required parameter
+        "404":
+          description: One or both indicators not found
+
+  /trend:
+    get:
+      tags: [Data]
+      summary: Get trend data for an indicator
+      description: Returns all vintage variants of an indicator (e.g., population_2022, population_2023, population_2024)
+      parameters:
+        - name: name
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Trend data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name: { type: string }
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Indicator" }
+
+  /correlation:
+    get:
+      tags: [Data]
+      summary: Cross-indicator correlation analysis
+      description: |
+        Computes Pearson correlation between indicator pairs that share ≥3
+        vintage points in the time_series table. Returns top positive and
+        negative correlations.
+      responses:
+        "200":
+          description: Correlation analysis results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_pairs: { type: integer }
+                  indicators_analyzed: { type: integer }
+                  min_shared_points: { type: integer }
+                  top_positive:
+                    type: array
+                    items: { $ref: "#/components/schemas/CorrelationPair" }
+                  top_negative:
+                    type: array
+                    items: { $ref: "#/components/schemas/CorrelationPair" }
+                  all_pairs:
+                    type: array
+                    items: { $ref: "#/components/schemas/CorrelationPair" }
+
+  /export/full:
+    get:
+      tags: [Data]
+      summary: Full data export
+      description: Export all indicators with metadata in JSON or CSV format
+      parameters:
+        - name: format
+          in: query
+          schema: { type: string, enum: [json, csv], default: json }
+      responses:
+        "200":
+          description: Full export
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  metadata:
+                    type: object
+                    properties:
+                      generated_at: { type: string, format: date-time }
+                      total_indicators: { type: integer }
+                      freshness: { type: string }
+                  indicators:
+                    type: array
+                    items: { $ref: "#/components/schemas/Indicator" }
+            text/csv:
+              schema: { type: string }
+
+  /export/csv:
+    get:
+      tags: [Data]
+      summary: Export indicators as CSV
+      responses:
+        "200":
+          description: CSV file
+          content:
+            text/csv:
+              schema: { type: string }
+
+  /export/json:
+    get:
+      tags: [Data]
+      summary: Export indicators as JSON
+      responses:
+        "200":
+          description: JSON file
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exported_at: { type: string, format: date-time }
+                  count: { type: integer }
+                  indicators:
+                    type: array
+                    items: { $ref: "#/components/schemas/Indicator" }
+
+  /citations:
+    get:
+      tags: [Data]
+      summary: Citation quality scores
+      description: Returns citation validation scores for all indicators
+      responses:
+        "200":
+          description: Citation scores
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total: { type: integer }
+                  average_score: { type: number }
+                  citations:
                     type: array
                     items:
                       type: object
+                      properties:
+                        indicator: { type: string }
+                        source: { type: string }
+                        url: { type: string }
+                        score: { type: integer }
+                        issues:
+                          type: array
+                          items: { type: string }
+
+  /coherence:
+    get:
+      tags: [Data]
+      summary: Cross-source coherence groups
+      description: Returns indicators grouped by semantic domain to highlight cross-source disagreements
+      responses:
+        "200":
+          description: Coherence groups
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  groups:
+                    type: object
+                    additionalProperties:
+                      type: object
+                      properties:
+                        label: { type: string }
+                        indicator_names:
+                          type: array
+                          items: { type: string }
+                        unit: { type: string }
+                        note: { type: string }
+
+  /executive-summary:
+    get:
+      tags: [Data]
+      summary: Executive summary
+      description: Returns key metrics (population, unemployment, income) and freshness status
+      responses:
+        "200":
+          description: Key metrics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  population: { $ref: "#/components/schemas/Indicator" }
+                  unemployment: { $ref: "#/components/schemas/Indicator" }
+                  median_income: { $ref: "#/components/schemas/Indicator" }
+                  freshness: { type: string }
+
+  /chart/{chart_name}.png:
+    get:
+      tags: [Data]
+      summary: Get a pre-generated chart image
+      parameters:
+        - name: chart_name
+          in: path
+          required: true
+          schema: { type: string }
+          description: Name of the chart (e.g., population_trend, employment_overview, climate_summary)
+      responses:
+        "200":
+          description: PNG image
+          content:
+            image/png:
+              schema: { type: string, format: binary }
+        "404":
+          description: Chart not found
+
 
   /health:
     get:
@@ -107,48 +369,132 @@ paths:
                   status:
                     type: string
                     enum: [healthy, degraded]
-                  db_exists:
-                    type: boolean
-                  indicator_count:
-                    type: integer
+                  db_exists: { type: boolean }
+                  indicator_count: { type: integer }
+                  latest_refresh: { type: string }
+
+  /status:
+    get:
+      tags: [Health]
+      summary: Full system status
+      description: Returns operational status, category counts, SLA tracking, and pipeline manifest
+      responses:
+        "200":
+          description: System status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [operational, degraded, down] }
+                  indicator_count: { type: integer }
+                  categories: { type: object }
+                  sla:
+                    type: object
+                    properties:
+                      met: { type: boolean }
+                      target: { type: string }
+                      last_refresh_days: { type: number }
+                  endpoints: { type: object }
+                  manifest: { type: array }
 
   /contributions:
     post:
       tags: [Contributions]
       summary: Submit a new contribution
       description: |
-        Submit a new contribution to the knowledge system. Requires a valid API key.
-        The contribution type determines which pathway it flows through.
-      security:
-        - BearerAuth: []
+        Submit a new contribution to the knowledge system. Anonymous submissions
+        are allowed unless VOLUSIA_API_KEYS is set. Rate limited to 10 requests
+        per 60 seconds per client (configurable via VOLUSIA_RATE_LIMIT and
+        VOLUSIA_RATE_WINDOW env vars).
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              $ref: "#/components/schemas/ContributionSubmission"
+            schema: { $ref: "#/components/schemas/ContributionSubmission" }
       responses:
         "201":
           description: Contribution accepted for review
+          headers:
+            X-RateLimit-Limit:
+              schema: { type: integer }
+              description: Max requests per window
+            X-RateLimit-Remaining:
+              schema: { type: integer }
+              description: Remaining requests in current window
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  submission_id:
-                    type: string
+                  submission_id: { type: string }
                   status:
                     type: string
-                    enum: [queued, under_review, accepted, returned, rejected]
-                  estimated_review_by:
-                    type: string
-                    format: date-time
+                    enum: [queued, under_review, approved, rejected, needs_revision]
+                  submitted_at: { type: string, format: date-time }
+                  acknowledged_at: { type: string, format: date-time }
+                  estimated_review_by: { type: string, format: date-time }
+                  reviewer: { type: string }
+                  anonymous: { type: boolean }
+                  message: { type: string }
         "400":
           description: Validation error
         "401":
           description: Missing or invalid API key
         "429":
           description: Rate limit exceeded
+          headers:
+            Retry-After:
+              schema: { type: number }
+              description: Seconds until next request allowed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: object
+                    properties:
+                      error: { type: string }
+                      retry_after_seconds: { type: number }
+                      limit: { type: integer }
+                      window_seconds: { type: integer }
+
+    get:
+      tags: [Contributions]
+      summary: List recent contributions
+      description: List recent submissions (for CGB triage)
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50, minimum: 1, maximum: 100 }
+        - name: offset
+          in: query
+          schema: { type: integer, default: 0, minimum: 0 }
+        - name: status
+          in: query
+          schema: { type: string }
+          description: Filter by status (queued, under_review, approved, rejected, needs_revision)
+      responses:
+        "200":
+          description: List of submissions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count: { type: integer }
+                  submissions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        submission_id: { type: string }
+                        contribution_type: { type: string }
+                        status: { type: string }
+                        submitted_at: { type: string }
+                        reviewer: { type: string }
+                        author_name: { type: string }
 
   /contributions/{submission_id}:
     get:
@@ -160,57 +506,71 @@ paths:
           required: true
           schema:
             type: string
+    patch:
+      tags: [Contributions]
+      summary: Update contribution status
+      description: Update a submission's status (CGB triage use)
+      parameters:
+        - name: submission_id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [queued, under_review, approved, rejected, needs_revision]
+                decision: { type: string }
+                reviewer: { type: string }
       responses:
         "200":
-          description: Contribution details and review status
+          description: Submission updated
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  submission_id:
-                    type: string
-                  status:
-                    type: string
-                  submitted_at:
-                    type: string
-                    format: date-time
-                  decision:
-                    type: string
-                  reviewer:
-                    type: string
+                  submission_id: { type: string }
+                  status: { type: string }
+                  decision: { type: string }
+                  reviewer: { type: string }
+                  acknowledged_at: { type: string }
+                  message: { type: string }
+        "400":
+          description: Invalid status value
+        "404":
+          description: Submission not found
 
 components:
   securitySchemes:
     BearerAuth:
       type: http
       scheme: bearer
+      bearerFormat: API Key
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
 
   schemas:
     Indicator:
       type: object
       properties:
-        id:
-          type: integer
-        name:
-          type: string
-        value:
-          type: string
-        unit:
-          type: string
-        category:
-          type: string
-        source:
-          type: string
-        source_url:
-          type: string
-        vintage:
-          type: string
-        fetched_at:
-          type: string
-          format: date-time
-        description:
-          type: string
+        id: { type: integer }
+        name: { type: string }
+        value: { type: string }
+        unit: { type: string }
+        category: { type: string }
+        source: { type: string }
+        source_url: { type: string }
+        vintage: { type: string }
+        fetched_at: { type: string, format: date-time }
+        description: { type: string }
+        checksum: { type: string }
 
     ContributionSubmission:
       type: object
@@ -220,8 +580,31 @@ components:
           type: string
           enum: [data_source, analysis, tool, map, report, community, social_media, educational, direct]
         content:
-          type: object
           description: The contribution payload (structure varies by type)
+          oneOf:
+            - type: string
+            - type: object
+        author_name: { type: string }
+        author_email: { type: string, format: email }
         idempotency_key:
           type: string
-          description: Optional key for safe retry
+          description: Optional key for safe retry (returns existing submission on duplicate)
+
+    CorrelationPair:
+      type: object
+      properties:
+        indicator_a: { type: string }
+        indicator_b: { type: string }
+        correlation_r:
+          type: number
+          format: float
+          description: Pearson correlation coefficient (-1 to 1)
+        shared_points:
+          type: integer
+          description: Number of shared vintage points
+        strength:
+          type: string
+          enum: [strong, moderate, weak]
+        direction:
+          type: string
+          enum: [positive, negative]
