@@ -29,7 +29,6 @@ RULES = {
     "veterans_count": {"min": 10000, "max": 100000, "type": "count"},
     "avg_household_size": {"min": 1, "max": 5, "type": "count"},
     "persons_per_household": {"min": 1, "max": 5, "type": "count"},
-    
     # Economy
     "median_household_income": {"min": 30000, "max": 150000, "type": "currency"},
     "per_capita_income_census": {"min": 20000, "max": 80000, "type": "currency"},
@@ -55,7 +54,6 @@ RULES = {
     "farmton_development": {"min": 1000, "max": 50000, "type": "count"},
     "ormond_crossings_development": {"min": 100, "max": 5000, "type": "count"},
     "business_resources_providers": {"min": 1, "max": 50, "type": "count"},
-    
     # Housing
     "median_home_value": {"min": 100000, "max": 600000, "type": "currency"},
     "median_gross_rent": {"min": 500, "max": 3000, "type": "currency"},
@@ -63,7 +61,6 @@ RULES = {
     "owner_occupied_rate": {"min": 30, "max": 90, "type": "percentage"},
     "housing_units_2025": {"min": 100000, "max": 500000, "type": "count"},
     "median_home_price_zillow": {"min": 100000, "max": 600000, "type": "currency"},
-    
     # Education
     "high_school_grad_rate": {"min": 70, "max": 100, "type": "percentage"},
     "bachelors_degree_rate": {"min": 10, "max": 60, "type": "percentage"},
@@ -85,7 +82,6 @@ RULES = {
     "civics_proficiency": {"min": 0, "max": 100, "type": "percentage"},
     "school_district_website": {"min": 0, "max": 0, "type": "skip"},
     "fl_doe_grades": {"min": 0, "max": 0, "type": "skip"},
-    
     # Health
     "uninsured_rate": {"min": 0, "max": 30, "type": "percentage"},
     "disability_rate": {"min": 0, "max": 30, "type": "percentage"},
@@ -100,7 +96,6 @@ RULES = {
     "air_quality_good_days": {"min": 200, "max": 365, "type": "count"},
     "superfund_sites_fl": {"min": 1, "max": 100, "type": "count"},
     "volusia_sole_source_aquifer": {"min": 0, "max": 1, "type": "count"},
-    
     # Public Safety
     "crime_rate_per_100k": {"min": 500, "max": 5000, "type": "count"},
     "safety_score": {"min": 0, "max": 100, "type": "score"},
@@ -112,7 +107,6 @@ RULES = {
     "spotcrime_analytics": {"min": 0, "max": 0, "type": "skip"},
     "arrest_records_portal": {"min": 0, "max": 0, "type": "skip"},
     "flccis_portal": {"min": 0, "max": 0, "type": "skip"},
-    
     # Government
     "county_main_website": {"min": 0, "max": 0, "type": "skip"},
     "open_data_portal": {"min": 0, "max": 0, "type": "skip"},
@@ -132,30 +126,25 @@ RULES = {
     "elections_twitter": {"min": 0, "max": 1, "type": "count"},
     "elections_instagram": {"min": 0, "max": 1, "type": "count"},
     "county_facebook": {"min": 0, "max": 1, "type": "count"},
-    
     # Economy
     "edc_website": {"min": 0, "max": 0, "type": "skip"},
     "team_volusia": {"min": 0, "max": 0, "type": "skip"},
     "volusia_business_resources": {"min": 0, "max": 0, "type": "skip"},
     "micaPlex_incubator": {"min": 0, "max": 1, "type": "count"},
-    
     # Infrastructure
     "fcc_broadband_map": {"min": 0, "max": 0, "type": "skip"},
     "internet_providers_count": {"min": 1, "max": 10, "type": "count"},
     "fiber_provider_coverage": {"min": 0, "max": 100, "type": "percentage"},
     "broadband_data_collection": {"min": 0, "max": 0, "type": "skip"},
-    
     # Media
     "primary_newspaper": {"min": 0, "max": 0, "type": "skip"},
     "newspaper_founded": {"min": 1800, "max": 2026, "type": "count"},
     "newspaper_circulation": {"min": 10000, "max": 50000, "type": "count"},
     "local_news_sites": {"min": 1, "max": 20, "type": "count"},
-    
     # Climate
     "avg_max_temp_2024": {"min": 200, "max": 350, "type": "temperature"},
     "avg_min_temp_2024": {"min": 100, "max": 250, "type": "temperature"},
     "total_precip_2024": {"min": 5000, "max": 20000, "type": "precipitation"},
-    
     # Transportation
     "mean_travel_time_work": {"min": 10, "max": 50, "type": "time"},
     "mean_commute_time": {"min": 10, "max": 60, "type": "time"},
@@ -184,26 +173,28 @@ def validate_range(conn):
     """Check all indicators are within expected ranges."""
     results = []
     rows = conn.execute("SELECT name, value FROM indicators").fetchall()
-    
+
     for name, value in rows:
         if name in RULES and RULES[name].get("type") == "skip":
             results.append({"indicator": name, "status": "OK", "message": "Skipped"})
             continue
-        
+
         try:
             val = float(value)
         except (ValueError, TypeError):
             results.append({"indicator": name, "status": "ERROR", "message": f"Non-numeric value: {value}"})
             continue
-        
+
         if name in RULES:
             rule = RULES[name]
             if val < rule["min"] or val > rule["max"]:
-                results.append({
-                    "indicator": name,
-                    "status": "FAIL",
-                    "message": f"Value {val} outside range [{rule['min']}, {rule['max']}]",
-                })
+                results.append(
+                    {
+                        "indicator": name,
+                        "status": "FAIL",
+                        "message": f"Value {val} outside range [{rule['min']}, {rule['max']}]",
+                    }
+                )
             else:
                 results.append({"indicator": name, "status": "OK", "message": f"Value {val} within range"})
         else:
@@ -211,7 +202,7 @@ def validate_range(conn):
                 results.append({"indicator": name, "status": "OK", "message": "Value within default range"})
             else:
                 results.append({"indicator": name, "status": "WARN", "message": "No validation rule defined"})
-    
+
     return results
 
 
@@ -220,31 +211,33 @@ def validate_freshness(conn):
     results = []
     rows = conn.execute("SELECT name, source, fetched_at FROM indicators").fetchall()
     now = datetime.now(timezone.utc)
-    
+
     for name, source, fetched_at in rows:
         if not fetched_at:
             results.append({"indicator": name, "status": "ERROR", "message": "No fetch timestamp"})
             continue
-        
+
         try:
             fetched = datetime.fromisoformat(fetched_at)
             if fetched.tzinfo is None:
                 fetched = fetched.replace(tzinfo=timezone.utc)
             age_days = (now - fetched).days
-            
+
             max_age = 365  # default
             for key, days in FRESHNESS.items():
                 if key.lower() in source.lower():
                     max_age = days
                     break
-            
+
             if age_days > max_age:
-                results.append({"indicator": name, "status": "ERROR", "message": f"Data is {age_days} days old, max {max_age}"})
+                results.append(
+                    {"indicator": name, "status": "ERROR", "message": f"Data is {age_days} days old, max {max_age}"}
+                )
             else:
                 results.append({"indicator": name, "status": "OK", "message": f"Fetched {age_days} days ago"})
         except Exception as e:
             results.append({"indicator": name, "status": "ERROR", "message": f"Invalid timestamp: {e}"})
-    
+
     return results
 
 
@@ -252,10 +245,10 @@ def generate_report():
     """Generate full quality report."""
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
-    
+
     range_results = validate_range(conn)
     freshness_results = validate_freshness(conn)
-    
+
     # Inline citation validation
     citation_results = []
     rows = conn.execute("SELECT * FROM indicators ORDER BY category, name").fetchall()
@@ -266,10 +259,10 @@ def generate_report():
         url = row_dict.get("source_url", "")
         vintage = row_dict.get("vintage", "")
         description = row_dict.get("description", "")
-        
+
         score = 100
         issues = []
-        
+
         if not source:
             score -= 30
             issues.append("Missing source")
@@ -285,25 +278,27 @@ def generate_report():
         if not description or len(description) < 10:
             score -= 10
             issues.append("Missing/short description")
-        
-        citation_results.append({
-            "indicator": name,
-            "source": source,
-            "url": url,
-            "vintage": vintage,
-            "score": max(0, score),
-            "issues": issues,
-        })
-    
+
+        citation_results.append(
+            {
+                "indicator": name,
+                "source": source,
+                "url": url,
+                "vintage": vintage,
+                "score": max(0, score),
+                "issues": issues,
+            }
+        )
+
     all_checks = range_results + freshness_results
-    
+
     ok = len([c for c in all_checks if c["status"] == "OK"])
     warn = len([c for c in all_checks if c["status"] == "WARN"])
     fail = len([c for c in all_checks if c["status"] == "FAIL"])
     error = len([c for c in all_checks if c["status"] == "ERROR"])
-    
+
     overall = "OK" if error == 0 and fail == 0 else "FAIL"
-    
+
     report = {
         "overall": overall,
         "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -320,7 +315,7 @@ def generate_report():
             "citations": citation_results,
         },
     }
-    
+
     conn.close()
     return report
 

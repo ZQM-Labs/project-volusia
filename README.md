@@ -21,11 +21,18 @@ Project Volusia is a comprehensive open data portal for Volusia County, Florida.
 
 ### Key Features
 
-- **26+ Indicators** — Demographics, economy, climate, tourism
-- **112 Data Sources** — Government agencies, academic institutions
+- **474 Indicators** — Demographics, economy, health, education, environment, and more
+- **112 Data Sources** — Government agencies, academic institutions, and reputable organizations
+- **39 Real-Time Sensors** — Traffic cameras, weather stations, air quality monitors, water sensors, webcams
+- **15 Categories** — Comprehensive coverage of county data
 - **Automated Pipeline** — Fetches, validates, stores in SQLite
 - **REST API** — FastAPI endpoints for live data
-- **Quality Validation** — Automated source verification
+- **Community Contributions** — Humans and AI agents can submit data and research
+- **Quality Validation** — Automated source verification and citation scoring
+- **Paginated API** — Efficient data retrieval with limit/offset pagination
+- **Rate Limiting** — Protection against abuse (10 req/60s per client)
+- **Correlation Analysis** — Pearson cross-indicator correlation
+- **Configurable CORS** — Secure cross-origin resource sharing
 
 ---
 
@@ -84,15 +91,41 @@ python refresh_v2.py
 
 ## API Endpoints
 
-| Endpoint | Description |
-|----------|-------------|
-| `/api/` | Root |
-| `/api/health` | Health check + indicator count |
-| `/api/indicators` | All indicators (filter: `?category=Economic`) |
-| `/api/indicators/{name}` | Single indicator |
-| `/api/indicators.csv` | Download all as CSV |
-| `/api/datasets` | Latest datasets |
-| `/api/refresh` | Trigger a pipeline refresh |
+### Portal API (port 8789)
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/health` | GET | Health check with indicator count |
+| `/api/status` | GET | System status with SLA tracking |
+| `/api/indicators` | GET | Paginated indicators (limit/offset) |
+| `/api/citations` | GET | Citation quality scores |
+| `/api/search` | GET | Full-text search |
+| `/api/compare` | GET | Compare two indicators |
+| `/api/trend` | GET | Trend data by vintage |
+| `/api/correlation` | GET | Pearson correlation analysis |
+| `/api/export/full` | GET | Full data export (JSON/CSV) |
+| `/api/export/csv` | GET | CSV export |
+| `/api/export/json` | GET | JSON export |
+| `/api/datasets` | GET | Dataset history |
+| `/api/executive-summary` | GET | Key metrics snapshot |
+| `/api/coherence` | GET | Cross-source coherence groups |
+| `/api/chart/*.png` | GET | Chart images (cached 1hr) |
+
+**Pagination:** `/api/indicators?limit=50&offset=0` — Returns `count`, `total`, `has_more`, `limit`, `offset`.
+
+**Full endpoint reference:** [docs/api/endpoints.md](docs/api/endpoints.md)
+
+### Contribution API (port 8790)
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/v1/health` | GET | Health check with DB status |
+| `/api/v1/contributions` | POST | Submit contribution (rate limited) |
+| `/api/v1/contributions` | GET | List contributions (paginated) |
+| `/api/v1/contributions/{id}` | GET | Get contribution status |
+| `/api/v1/contributions/{id}` | PATCH | Update contribution status |
+
+**Rate Limiting:** 10 requests per 60 seconds per client. Configurable via `VOLUSIA_RATE_LIMIT` and `VOLUSIA_RATE_WINDOW` env vars. Returns `429` with `Retry-After` header when exceeded.
 
 ---
 

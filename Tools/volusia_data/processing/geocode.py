@@ -9,11 +9,9 @@ Usage:
 
 import argparse
 import csv
-import json
 import sys
 import time
 from pathlib import Path
-from datetime import datetime, timezone
 
 import requests
 
@@ -33,7 +31,7 @@ def geocode_census(address):
         resp = requests.get(CENSUS_GEOCODER, params=params, timeout=30)
         resp.raise_for_status()
         data = resp.json()
-        
+
         matches = data.get("result", {}).get("addressMatches", [])
         if matches:
             best = matches[0]
@@ -46,7 +44,7 @@ def geocode_census(address):
             }
     except Exception as e:
         print(f"Census geocode error: {e}", file=sys.stderr)
-    
+
     return None
 
 
@@ -64,7 +62,7 @@ def geocode_nominatim(address):
         resp = requests.get(NOMINATIM_URL, params=params, headers=headers, timeout=30)
         resp.raise_for_status()
         data = resp.json()
-        
+
         if data:
             best = data[0]
             return {
@@ -75,7 +73,7 @@ def geocode_nominatim(address):
             }
     except Exception as e:
         print(f"Nominatim geocode error: {e}", file=sys.stderr)
-    
+
     return None
 
 
@@ -83,10 +81,10 @@ def main():
     parser = argparse.ArgumentParser(description="Geocode addresses")
     parser.add_argument("--input", "-i", required=True, help="Input CSV with 'address' column")
     parser.add_argument("--output", "-o", help="Output CSV file")
-    parser.add_argument("--provider", choices=["census", "nominatim", "both"], default="census",
-                        help="Geocoding provider")
-    parser.add_argument("--rate-limit", type=float, default=1.0,
-                        help="Seconds between requests (default: 1.0)")
+    parser.add_argument(
+        "--provider", choices=["census", "nominatim", "both"], default="census", help="Geocoding provider"
+    )
+    parser.add_argument("--rate-limit", type=float, default=1.0, help="Seconds between requests (default: 1.0)")
     args = parser.parse_args()
 
     input_path = Path(args.input)
@@ -94,7 +92,7 @@ def main():
         print(f"ERROR: Input file not found: {input_path}", file=sys.stderr)
         sys.exit(1)
 
-    with open(input_path, 'r') as f:
+    with open(input_path, "r") as f:
         reader = csv.DictReader(f)
         rows = list(reader)
 
@@ -103,18 +101,18 @@ def main():
         sys.exit(1)
 
     # Check for address column
-    if 'address' not in rows[0]:
+    if "address" not in rows[0]:
         print("ERROR: Input must have an 'address' column", file=sys.stderr)
         sys.exit(1)
 
     results = []
     for i, row in enumerate(rows):
-        address = row.get('address', '')
+        address = row.get("address", "")
         if not address:
             results.append({**row, "lat": "", "lon": "", "geocode_source": ""})
             continue
 
-        print(f"Geocoding {i+1}/{len(rows)}: {address[:60]}...")
+        print(f"Geocoding {i + 1}/{len(rows)}: {address[:60]}...")
 
         result = None
         if args.provider in ("census", "both"):
@@ -123,13 +121,15 @@ def main():
             result = geocode_nominatim(address)
 
         if result:
-            results.append({
-                **row,
-                "lat": result["lat"],
-                "lon": result["lon"],
-                "matched_address": result["matched_address"],
-                "geocode_source": result["source"],
-            })
+            results.append(
+                {
+                    **row,
+                    "lat": result["lat"],
+                    "lon": result["lon"],
+                    "matched_address": result["matched_address"],
+                    "geocode_source": result["source"],
+                }
+            )
         else:
             results.append({**row, "lat": "", "lon": "", "geocode_source": "FAILED"})
 
@@ -140,7 +140,7 @@ def main():
     output_headers = list(rows[0].keys()) + ["lat", "lon", "matched_address", "geocode_source"]
     output_lines = [",".join(output_headers)]
     for r in results:
-        output_lines.append(",".join(str(r.get(h, '')) for h in output_headers))
+        output_lines.append(",".join(str(r.get(h, "")) for h in output_headers))
 
     result_text = "\n".join(output_lines)
 

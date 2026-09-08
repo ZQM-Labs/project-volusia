@@ -51,7 +51,7 @@ jobs:
         with:
           sarif_file: .zqm-security-reports/
       - name: Upload findings artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v5
         with:
           name: supply-chain-scan-${{ github.run_id }}
           path: .zqm-security-reports/

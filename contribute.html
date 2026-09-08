@@ -3,341 +3,278 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Project Volusia — Contribute</title>
-  <meta name="description" content="Contribute to Project Volusia: codebase, knowledge base, and mission. Open to humans and AI agents.">
-  <link rel="canonical" href="https://zqmlabs.com/contribute/">
+  <title>Contribute — Project Volusia</title>
   <style>
     :root { --bg:#0f172a; --ink:#e2e8f0; --muted:#94a3b8; --accent:#38bdf8; --card:#1e293b; --border:#334155; --green:#10b981; --yellow:#f59e0b; --red:#ef4444; }
     * { box-sizing: border-box; }
     body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: var(--bg); color: var(--ink); line-height:1.6; }
-    header { border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg); z-index: 100; }
-    .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+    header { border-bottom: 1px solid var(--border); }
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
     .nav { display:flex; justify-content:space-between; align-items:center; }
     .logo { font-weight:800; letter-spacing:-0.02em; font-size:18px; color: var(--accent); text-decoration: none; }
-    .nav-links a { color: var(--ink); text-decoration:none; font-weight:500; padding:6px 10px; border-radius:6px; margin-left: 4px; }
-    .nav-links a:hover { background:#334155; color: var(--accent); }
-    .hero { padding: 48px 20px 32px; text-align: center; }
-    h1 { font-size: clamp(28px, 4vw, 44px); line-height:1.1; letter-spacing:-0.03em; margin:0 0 10px; }
-    .subtitle { font-size:16px; color: var(--muted); max-width:640px; margin:0 auto 20px; }
-    .cta { display:inline-flex; gap:10px; flex-wrap:wrap; }
-    .btn { display:inline-block; padding:10px 14px; border-radius:8px; font-weight:600; text-decoration:none; border:1px solid var(--border); }
-    .btn-primary { background: var(--accent); color:#0f172a; border-color: var(--accent); }
-    .btn-secondary { background:transparent; color: var(--ink); }
-    .btn-green { background: var(--green); color:#0f172a; border-color: var(--green); }
-    section { padding: 32px 20px; }
-    .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:14px; }
-    .card { background: var(--card); border:1px solid var(--border); border-radius:10px; padding:16px; transition: transform 0.15s, box-shadow 0.15s; }
-    .card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-    .card h3 { margin: 0 0 8px; font-size: 15px; }
-    .card p { margin: 0; font-size: 13px; color: var(--muted); }
-    .card .btn { margin-top: 12px; }
-    .status-badge { display: inline-flex; align-items: center; gap: 6px; background: var(--card); border: 1px solid var(--border); padding: 4px 10px; border-radius: 999px; font-size: 12px; }
-    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
-    footer { border-top:1px solid var(--border); color: var(--muted); font-size:13px; padding: 16px 20px; text-align: center; }
-    
-    /* Form Styles */
-    .form-section { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin: 20px 0; }
+    .nav a { color: var(--ink); text-decoration:none; font-weight:500; padding:6px 10px; border-radius:6px; margin-left: 4px; }
+    .nav a:hover { background:#334155; color: var(--accent); }
+    .hero { padding: 40px 20px; }
+    h1 { font-size: 32px; margin: 0 0 8px; }
+    .subtitle { color: var(--muted); margin-bottom: 20px; }
+    .type-selector { display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 24px 0; }
+    .type-card { background: var(--card); border:1px solid var(--border); border-radius: 12px; padding: 16px; cursor: pointer; transition: all 0.2s; }
+    .type-card:hover { border-color: var(--accent); }
+    .type-card.selected { border-color: var(--accent); background: #1e3a5f; }
+    .type-card h3 { margin: 0 0 4px; font-size: 14px; }
+    .type-card p { margin: 0; font-size: 12px; color: var(--muted); }
+    .form-section { background: var(--card); border:1px solid var(--border); border-radius: 12px; padding: 24px; margin: 24px 0; }
     .form-section h2 { margin: 0 0 16px; font-size: 18px; }
     .form-group { margin-bottom: 16px; }
-    label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 13px; color: var(--muted); }
-    input, textarea, select { width: 100%; padding: 10px; background: var(--bg); color: var(--ink); border: 1px solid var(--border); border-radius: 6px; font-size: 14px; font-family: inherit; }
-    textarea { min-height: 100px; resize: vertical; }
-    input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent); }
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .btn-submit { background: var(--accent); color: #0f172a; padding: 12px 24px; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; }
-    .btn-submit:hover { background: #0284c7; }
-    .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
-    
-    /* Result message */
-    .result { margin-top: 16px; padding: 12px 16px; border-radius: 8px; display: none; }
-    .result.success { background: #064e3b; color: #a7f3d0; display: block; }
-    .result.error { background: #7f1d1d; color: #fecaca; display: block; }
-    
-    /* Tabs */
-    .tabs { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
-    .tab { padding: 8px 16px; background: transparent; border: none; color: var(--muted); cursor: pointer; border-radius: 6px; font-weight: 500; }
-    .tab.active { background: var(--accent); color: #0f172a; }
-    .tab:hover:not(.active) { background: var(--card); }
-    
-    /* API Docs */
-    .api-block { background:#1e293b; padding:12px 14px; border-radius:8px; border:1px solid #334155; font-family: ui-monospace, monospace; font-size:12px; overflow-x:auto; margin:8px 0; }
-    .api-block code { color:#a5f3fc; }
-    
-    /* Status page */
-    .status-table { width: 100%; border-collapse: collapse; margin: 16px 0; }
-    .status-table th, .status-table td { padding: 10px; text-align: left; border-bottom: 1px solid var(--border); }
-    .status-table th { color: var(--muted); font-size: 12px; text-transform: uppercase; }
-    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
-    .badge-queued { background: #fef3c7; color: #92400e; }
-    .badge-approved { background: #dcfce7; color: #166534; }
-    .badge-rejected { background: #fee2e2; color: #991b1b; }
+    .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+    .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border); background: #0f172a; color: var(--ink); font-size: 14px; }
+    .form-group textarea { min-height: 100px; resize: vertical; }
+    .form-row { display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+    .btn { display: inline-block; padding: 10px 20px; border-radius: 6px; font-size: 14px; font-weight: 600; text-decoration: none; border: none; cursor: pointer; }
+    .btn-primary { background: var(--accent); color: #0f172a; }
+    .btn-secondary { background: #334155; color: var(--ink); }
+    .pathways { display:grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin: 24px 0; }
+    .pathway { background: var(--card); border:1px solid var(--border); border-radius: 12px; padding: 20px; }
+    .pathway h3 { margin: 0 0 8px; font-size: 16px; }
+    .pathway p { margin: 0 0 12px; font-size: 13px; color: var(--muted); }
+    footer { border-top:1px solid var(--border); color: var(--muted); font-size:13px; padding: 20px; text-align: center; margin-top: 40px; }
   </style>
 </head>
 <body>
   <header>
     <div class="container nav">
       <a href="/" class="logo">Project Volusia</a>
-      <div class="nav-links">
-        <a href="/">Home</a>
-        <a href="/project-volusia">Portal</a>
+      <div>
+        <a href="/dashboard">Dashboard</a>
+        <a href="/data-explorer">Data</a>
+        <a href="/sensors">Sensors</a>
+        <a href="/osint-recon">OSINT</a>
         <a href="/contribute/">Contribute</a>
-        <a href="https://github.com/ZQM-Labs/project-volusia">GitHub</a>
       </div>
     </div>
   </header>
 
   <div class="hero">
     <h1>Contribute to Project Volusia</h1>
-    <p class="subtitle">Three ways to contribute: code, knowledge, or strategic input. All submissions are reviewed within 5 business days.</p>
-    <div class="cta">
-      <a class="btn btn-primary" href="#contribute-form">Contribute Now</a>
-      <a class="btn btn-secondary" href="#api-docs">API Docs</a>
-      <span class="status-badge"><span class="status-dot"></span> Open for contributions</span>
-    </div>
+    <p class="subtitle">Share data, research, tools, and knowledge about Volusia County, FL.</p>
   </div>
 
   <section>
     <div class="container">
-      <div class="grid">
-        <div class="card">
-          <h3>1. Codebase</h3>
-          <p>Submit code, scripts, tools, data fetchers, or bug fixes. All code is MIT-licensed.</p>
-          <a class="btn btn-secondary" href="#contribute-form" onclick="setType('tool')">Contribute Code</a>
+      <h2>Choose Contribution Type</h2>
+      <div class="type-selector">
+        <div class="type-card" onclick="selectType('data_source')">
+          <h3>Data Source</h3>
+          <p>New dataset or data source</p>
         </div>
-        <div class="card">
-          <h3>2. Knowledge Base</h3>
-          <p>Share data sources, local knowledge, observations, research, or analysis about Volusia County.</p>
-          <a class="btn btn-secondary" href="#contribute-form" onclick="setType('community')">Share Knowledge</a>
+        <div class="type-card" onclick="selectType('analysis')">
+          <h3>Analysis</h3>
+          <p>Research findings or analysis</p>
         </div>
-        <div class="card">
-          <h3>3. Mission &amp; Vision</h3>
-          <p>Help shape Project Volusia's strategic direction, priorities, and methodology.</p>
-          <a class="btn btn-secondary" href="#contribute-form" onclick="setType('direct')">Shape Mission</a>
+        <div class="type-card" onclick="selectType('tool')">
+          <h3>Tool</h3>
+          <p>Software tool or script</p>
+        </div>
+        <div class="type-card" onclick="selectType('map')">
+          <h3>Map</h3>
+          <p>GIS layer or map</p>
+        </div>
+        <div class="type-card" onclick="selectType('report')">
+          <h3>Report</h3>
+          <p>Written report or brief</p>
+        </div>
+        <div class="type-card" onclick="selectType('community')">
+          <h3>Community</h3>
+          <p>Community knowledge or feedback</p>
+        </div>
+        <div class="type-card" onclick="selectType('social_media')">
+          <h3>Social Media</h3>
+          <p>Social media content</p>
+        </div>
+        <div class="type-card" onclick="selectType('educational')">
+          <h3>Educational</h3>
+          <p>Educational material</p>
+        </div>
+        <div class="type-card" onclick="selectType('direct')">
+          <h3>Direct</h3>
+          <p>Direct message or suggestion</p>
         </div>
       </div>
-    </div>
-  </section>
 
-  <section id="contribute-form">
-    <div class="container">
-      <div class="form-section">
-        <h2>Submit a Contribution</h2>
+      <form id="contributionForm" action="/api/v1/contributions" method="POST">
+        <input type="hidden" name="contribution_type" id="contributionType" value="direct">
         
-        <div class="tabs">
-          <button class="tab active" onclick="switchTab('human')">Human</button>
-          <button class="tab" onclick="switchTab('ai')">AI Agent</button>
-        </div>
-        
-        <form id="contributionForm">
+        <div class="form-section">
+          <h2>Basic Information</h2>
           <div class="form-row">
             <div class="form-group">
-              <label for="contrib-type">Contribution Type</label>
-              <select id="contrib-type" name="contribution_type" required>
-                <option value="tool">Codebase (Tool/Script)</option>
-                <option value="data_source">Knowledge (Data Source)</option>
-                <option value="analysis">Knowledge (Analysis)</option>
-                <option value="community">Knowledge (Community)</option>
-                <option value="direct">Mission (Direct Input)</option>
+              <label for="title">Title *</label>
+              <input type="text" id="title" name="title" required placeholder="Brief title for your contribution">
+            </div>
+            <div class="form-group">
+              <label for="author_name">Your Name</label>
+              <input type="text" id="author_name" name="author_name" placeholder="Optional">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="description">Description *</label>
+            <textarea id="description" name="description" required placeholder="Describe your contribution in detail"></textarea>
+          </div>
+        </div>
+
+        <div class="form-section" id="dataSection" style="display:none;">
+          <h2>Data Source Details</h2>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="source_url">Source URL *</label>
+              <input type="url" id="source_url" name="source_url" placeholder="https://example.gov/data">
+            </div>
+            <div class="form-group">
+              <label for="source_agency">Source Agency</label>
+              <input type="text" id="source_agency" name="source_agency" placeholder="e.g., Census Bureau">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="category">Category</label>
+              <select id="category" name="category">
+                <option value="">Select category...</option>
+                <option value="Demographics">Demographics</option>
+                <option value="Economy">Economy</option>
+                <option value="Education">Education</option>
+                <option value="Government">Government</option>
+                <option value="Health">Health</option>
+                <option value="Housing">Housing</option>
+                <option value="Infrastructure">Infrastructure</option>
+                <option value="Public Safety">Public Safety</option>
+                <option value="Transportation">Transportation</option>
+                <option value="Climate">Climate</option>
+                <option value="Hydrography">Hydrography</option>
+                <option value="GIS">GIS</option>
+                <option value="Media">Media</option>
+                <option value="Boundaries">Boundaries</option>
+                <option value="Terrain">Terrain</option>
               </select>
             </div>
             <div class="form-group">
-              <label for="contrib-title">Title</label>
-              <input type="text" id="contrib-title" name="title" placeholder="Brief title for your contribution" required>
+              <label for="vintage">Vintage (Year)</label>
+              <input type="text" id="vintage" name="vintage" placeholder="e.g., 2024">
             </div>
-          </div>
-          
-          <div class="form-group">
-            <label for="contrib-content">Description</label>
-            <textarea id="contrib-content" name="content" placeholder="Describe your contribution in detail. For code, include implementation notes. For knowledge, include what/where/when/source." required></textarea>
-          </div>
-          
-          <div class="form-row">
-            <div class="form-group">
-              <label for="contrib-name">Your Name (optional)</label>
-              <input type="text" id="contrib-name" name="author_name" placeholder="Anonymous">
-            </div>
-            <div class="form-group">
-              <label for="contrib-email">Contact Email (optional)</label>
-              <input type="email" id="contrib-email" name="author_email" placeholder="For follow-up only">
-            </div>
-          </div>
-          
-          <button type="submit" class="btn-submit" id="submit-btn">Submit Contribution</button>
-          <div id="result" class="result"></div>
-        </form>
-      </div>
-    </div>
-  </section>
-
-  <section id="api-docs">
-    <div class="container">
-      <h2>AI Agent API</h2>
-      <p style="color: var(--muted);">Programmatic access for AI agents and automated systems.</p>
-      
-      <h3>Submit Contribution</h3>
-      <div class="api-block">
-        <code>POST /api/v1/contributions<br>
-Content-Type: application/json<br><br>
-{<br>
-&nbsp;&nbsp;"contribution_type": "tool",<br>
-&nbsp;&nbsp;"content": {<br>
-&nbsp;&nbsp;&nbsp;&nbsp;"title": "FDOT Traffic Fetcher",<br>
-&nbsp;&nbsp;&nbsp;&nbsp;"description": "Fetches traffic count data from FDOT for Volusia County",<br>
-&nbsp;&nbsp;&nbsp;&nbsp;"code": "import requests..."<br>
-&nbsp;&nbsp;},<br>
-&nbsp;&nbsp;"author_name": "AI Agent",<br>
-&nbsp;&nbsp;"author_email": ""<br>
-}</code>
-      </div>
-      
-      <h3>Check Status</h3>
-      <div class="api-block">
-        <code>GET /api/v1/contributions/SUB-TOOL-20260905082823811456</code>
-      </div>
-      
-      <h3>List Submissions</h3>
-      <div class="api-block">
-        <code>GET /api/v1/contributions?limit=10&status=queued</code>
-      </div>
-      
-      <h3>Contribution Types</h3>
-      <ul style="color: var(--muted); font-size: 14px;">
-        <li><code>tool</code> — Software, scripts, data fetchers</li>
-        <li><code>data_source</code> — New public data sources</li>
-        <li><code>analysis</code> — Research or data analysis</li>
-        <li><code>community</code> — Local knowledge and observations</li>
-        <li><code>direct</code> — Strategic feedback and mission input</li>
-      </ul>
-    </div>
-  </section>
-
-  <section id="status-lookup">
-    <div class="container">
-      <h2>Check Submission Status</h2>
-      <div class="form-section">
-        <div class="form-row">
-          <div class="form-group">
-            <label for="status-id">Submission ID</label>
-            <input type="text" id="status-id" placeholder="SUB-TOOL-...">
-          </div>
-          <div class="form-group" style="display: flex; align-items: flex-end;">
-            <button class="btn-submit" onclick="checkStatus()">Check Status</button>
           </div>
         </div>
-        <div id="status-result"></div>
+
+        <div class="form-section" id="toolSection" style="display:none;">
+          <h2>Tool Details</h2>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="language">Programming Language</label>
+              <input type="text" id="language" name="language" placeholder="e.g., Python">
+            </div>
+            <div class="form-group">
+              <label for="repository">Repository URL</label>
+              <input type="url" id="repository" name="repository" placeholder="https://github.com/...">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="dependencies">Dependencies</label>
+            <input type="text" id="dependencies" name="dependencies" placeholder="e.g., requests, pandas">
+          </div>
+        </div>
+
+        <div class="form-section" id="indicatorsSection" style="display:none;">
+          <h2>Indicators</h2>
+          <div class="form-group">
+            <label for="indicators">Indicators (JSON format)</label>
+            <textarea id="indicators" name="indicators" placeholder='[{"name": "example", "value": "123", "unit": "count"}]'></textarea>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <button type="submit" class="btn btn-primary">Submit Contribution</button>
+          <button type="reset" class="btn btn-secondary">Reset</button>
+        </div>
+      </form>
+
+      <h2>Other Ways to Contribute</h2>
+      <div class="pathways">
+        <div class="pathway">
+          <h3>GitHub Issue</h3>
+          <p>Open an issue on GitHub with the contribution label.</p>
+          <a href="https://github.com/ZQM-Labs/project-volusia/issues/new" class="btn btn-secondary">Open Issue</a>
+        </div>
+        <div class="pathway">
+          <h3>Pull Request</h3>
+          <p>Submit a PR with data or code changes.</p>
+          <a href="https://github.com/ZQM-Labs/project-volusia/pulls" class="btn btn-secondary">Create PR</a>
+        </div>
+        <div class="pathway">
+          <h3>Email</h3>
+          <p>Send contributions via email.</p>
+          <a href="mailto:zqmcomputing@gmail.com" class="btn btn-secondary">Send Email</a>
+        </div>
+        <div class="pathway">
+          <h3>API</h3>
+          <p>Submit programmatically via REST API.</p>
+          <a href="/api/health" class="btn btn-secondary">API Docs</a>
+        </div>
       </div>
     </div>
   </section>
 
-  <section>
-    <div class="container">
-      <h2>Review Process</h2>
-      <ul style="color: var(--muted); font-size: 14px;">
-        <li>All submissions are reviewed by the Project Volusia Governance Board within 5 business days.</li>
-        <li>You will receive an update at your provided email (if any).</li>
-        <li>Approved contributions are integrated into the codebase or knowledge base.</li>
-        <li>You can check status anytime using your submission ID.</li>
-      </ul>
-    </div>
-  </section>
+  <script>
+    function selectType(type) {
+      document.getElementById('contributionType').value = type;
+      document.querySelectorAll('.type-card').forEach(c => c.classList.remove('selected'));
+      event.currentTarget.classList.add('selected');
+      
+      // Show/hide relevant sections
+      document.getElementById('dataSection').style.display = (type === 'data_source') ? 'block' : 'none';
+      document.getElementById('toolSection').style.display = (type === 'tool') ? 'block' : 'none';
+      document.getElementById('indicatorsSection').style.display = (type === 'data_source') ? 'block' : 'none';
+    }
+    
+    document.getElementById('contributionForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const data = {
+        contribution_type: formData.get('contribution_type'),
+        content: {
+          title: formData.get('title'),
+          description: formData.get('description'),
+          author_name: formData.get('author_name'),
+          source_url: formData.get('source_url'),
+          source_agency: formData.get('source_agency'),
+          category: formData.get('category'),
+          vintage: formData.get('vintage'),
+          language: formData.get('language'),
+          repository: formData.get('repository'),
+          dependencies: formData.get('dependencies'),
+          indicators: formData.get('indicators')
+        }
+      };
+      
+      try {
+        const response = await fetch('/api/v1/contributions', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(data)
+        });
+        const result = await response.json();
+        if (response.ok) {
+          alert('Contribution submitted! ID: ' + result.submission_id);
+        } else {
+          alert('Error: ' + result.detail);
+        }
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    });
+  </script>
 
   <footer>
     <div class="container">
-      &copy; ZQM Labs — Project Volusia. Public data from U.S. Census, BLS, BEA, NOAA. Contact: <a href="mailto:zqmcomputing@gmail.com" style="color:var(--accent);">zqmcomputing@gmail.com</a>
+      &copy; ZQM Labs — Project Volusia. Open intelligence for Volusia County, FL.
     </div>
   </footer>
-
-  <script>
-    // Set contribution type from card click
-    function setType(type) {
-      document.getElementById('contrib-type').value = type;
-      document.getElementById('contrib-title').scrollIntoView({ behavior: 'smooth' });
-    }
-    
-    // Switch tabs
-    function switchTab(tab) {
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      event.target.classList.add('active');
-    }
-    
-    // Submit form
-    document.getElementById('contributionForm').addEventListener('submit', async function(e) {
-      e.preventDefault();
-      
-      const btn = document.getElementById('submit-btn');
-      const result = document.getElementById('result');
-      
-      const type = document.getElementById('contrib-type').value;
-      const title = document.getElementById('contrib-title').value;
-      const content = document.getElementById('contrib-content').value;
-      const name = document.getElementById('contrib-name').value;
-      const email = document.getElementById('contrib-email').value;
-      
-      if (!title || !content) {
-        result.className = 'result error';
-        result.textContent = 'Title and content are required.';
-        return;
-      }
-      
-      btn.disabled = true;
-      btn.textContent = 'Submitting...';
-      result.className = 'result';
-      result.textContent = '';
-      
-      try {
-        const resp = await fetch('/api/v1/contributions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contribution_type: type,
-            content: { title: title, description: content },
-            author_name: name,
-            author_email: email,
-          }),
-        });
-        
-        const data = await resp.json();
-        
-        if (resp.ok) {
-          result.className = 'result success';
-          result.innerHTML = '<strong>Thank you!</strong> Your contribution has been received.<br>Submission ID: <code>' + data.submission_id + '</code><br>Estimated review: ' + (data.estimated_review_by ? data.estimated_review_by.slice(0, 10) : 'within 5 business days');
-          document.getElementById('contributionForm').reset();
-        } else {
-          result.className = 'result error';
-          result.textContent = 'Error: ' + (data.detail || 'Submission failed');
-        }
-      } catch (err) {
-        result.className = 'result error';
-        result.textContent = 'Connection error: Could not reach the server.';
-      }
-      
-      btn.disabled = false;
-      btn.textContent = 'Submit Contribution';
-    });
-    
-    // Check status
-    async function checkStatus() {
-      const id = document.getElementById('status-id').value.trim();
-      const result = document.getElementById('status-result');
-      
-      if (!id) {
-        result.innerHTML = '<p style="color: var(--muted);">Please enter a submission ID.</p>';
-        return;
-      }
-      
-      try {
-        const resp = await fetch('/api/v1/contributions/' + id);
-        const data = await resp.json();
-        
-        if (resp.ok) {
-          result.innerHTML = '<table class="status-table"><tr><td>ID</td><td><code>' + data.submission_id + '</code></td></tr><tr><td>Type</td><td>' + data.contribution_type + '</td></tr><tr><td>Status</td><td><span class="badge badge-' + data.status + '">' + data.status + '</span></td></tr><tr><td>Reviewer</td><td>' + data.reviewer + '</td></tr><tr><td>Submitted</td><td>' + data.submitted_at.slice(0, 19) + '</td></tr></table>';
-        } else {
-          result.innerHTML = '<p style="color: var(--red);">Submission not found.</p>';
-        }
-      } catch (err) {
-        result.innerHTML = '<p style="color: var(--red);">Connection error.</p>';
-      }
-    }
-  </script>
 </body>
 </html>

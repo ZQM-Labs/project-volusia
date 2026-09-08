@@ -14,6 +14,8 @@
 #
 # See README.md in the repo root for full architecture context.
 
+__version__ = "2026-09-03"
+
 from fastapi import FastAPI, Depends, HTTPException, Request, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware

@@ -10,7 +10,6 @@ Usage:
 """
 
 import argparse
-import json
 import sqlite3
 import sys
 from datetime import datetime, timezone
@@ -43,60 +42,64 @@ def check_staleness():
     """Check all indicators for staleness."""
     if not DB_PATH.exists():
         return [{"indicator": "DATABASE", "status": "MISSING", "message": "Database file does not exist"}]
-    
+
     conn = get_db()
     rows = conn.execute("SELECT name, source, fetched_at FROM indicators").fetchall()
     conn.close()
-    
+
     now = datetime.now(timezone.utc)
     stale = []
-    
+
     for row in rows:
         name = row["name"]
         source = row["source"]
         fetched_at = row["fetched_at"]
-        
+
         if not fetched_at:
             stale.append({"indicator": name, "source": source, "status": "MISSING", "message": "No fetch timestamp"})
             continue
-        
+
         try:
             fetched = datetime.fromisoformat(fetched_at)
             age_days = (now - fetched).days
-            
+
             threshold = 365  # default
             for key, days in THRESHOLDS.items():
                 if key in source:
                     threshold = days
                     break
-            
+
             if age_days > threshold:
-                stale.append({
-                    "indicator": name,
-                    "source": source,
-                    "status": "STALE",
-                    "message": f"{age_days} days old (threshold: {threshold})",
-                })
+                stale.append(
+                    {
+                        "indicator": name,
+                        "source": source,
+                        "status": "STALE",
+                        "message": f"{age_days} days old (threshold: {threshold})",
+                    }
+                )
         except (ValueError, TypeError):
-            stale.append({"indicator": name, "source": source, "status": "ERROR", "message": f"Invalid timestamp: {fetched_at}"})
-    
+            stale.append(
+                {"indicator": name, "source": source, "status": "ERROR", "message": f"Invalid timestamp: {fetched_at}"}
+            )
+
     return stale
 
 
 def send_webhook(webhook_url, stale_items):
     """Send alert to webhook (Discord, Slack, etc.)."""
     import requests
-    
+
     content = f"⚠️ **Project Volusia Data Alert**: {len(stale_items)} indicator(s) stale\n"
     for item in stale_items:
         content += f"- `{item['indicator']}`: {item['message']}\n"
-    
+
     payload = {"content": content}
-    
+
     try:
         resp = requests.post(webhook_url, json=payload, timeout=10)
         resp.raise_for_status()
-        print(f"Alert sent to webhook")
+        print("Alert sent to webhook")
     except Exception as e:
         print(f"Failed to send webhook: {e}")
 
@@ -105,17 +108,17 @@ def main():
     parser = argparse.ArgumentParser(description="Check data staleness")
     parser.add_argument("--webhook", help="Webhook URL for alerts (Discord, Slack)")
     args = parser.parse_args()
-    
+
     stale = check_staleness()
-    
+
     if stale:
         print(f"ALERT: {len(stale)} stale indicator(s)")
         for item in stale:
             print(f"  {item['indicator']}: {item['message']}")
-        
+
         if args.webhook:
             send_webhook(args.webhook, stale)
-        
+
         sys.exit(1)
     else:
         print("All data fresh")

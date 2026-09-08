@@ -7,7 +7,6 @@ Usage:
     python verify_startup.py
 """
 
-import json
 import socket
 import sys
 import urllib.request
@@ -57,7 +56,6 @@ def check_endpoint(path, expected_type=None):
         url = f"http://127.0.0.1{path}"
         req = urllib.request.Request(url)
         with urllib.request.urlopen(req, timeout=5) as resp:
-            status = resp.status
             content_type = resp.headers.get("Content-Type", "").split(";")[0]
             if expected_type and expected_type not in content_type:
                 return False, f"Expected {expected_type}, got {content_type}"
@@ -70,9 +68,9 @@ def main():
     print("=" * 60)
     print("Project Volusia — Startup Verification")
     print("=" * 60)
-    
+
     all_ok = True
-    
+
     # Check services
     print("\n[1] Service Status")
     for service in SERVICES:
@@ -81,7 +79,7 @@ def main():
         else:
             print(f"  ✗ {service['name']} (port {service['port']}) — NOT RUNNING")
             all_ok = False
-    
+
     # Check endpoints
     print("\n[2] Endpoint Status")
     for path, expected_type in ENDPOINTS:
@@ -91,26 +89,28 @@ def main():
         else:
             print(f"  ✗ {path} — {msg}")
             all_ok = False
-    
+
     # Check database
     print("\n[3] Database Status")
     db_path = TOOLS_DIR / "volusia_data" / "volusia.db"
     if db_path.exists():
         import sqlite3
+
         conn = sqlite3.connect(db_path)
         indicators = conn.execute("SELECT COUNT(*) FROM indicators").fetchone()[0]
         submissions = conn.execute("SELECT COUNT(*) FROM submissions").fetchone()[0]
         conn.close()
         print(f"  ✓ Database: {indicators} indicators, {submissions} submissions")
     else:
-        print(f"  ✗ Database not found")
+        print("  ✗ Database not found")
         all_ok = False
-    
+
     # Check quality
     print("\n[4] Data Quality")
     try:
         sys.path.insert(0, str(TOOLS_DIR))
         from volusia_data.quality.validate import generate_report
+
         report = generate_report()
         if report["overall"] == "OK":
             print(f"  ✓ Quality: {report['summary']['ok']}/{report['summary']['total']} checks passing")
@@ -118,7 +118,7 @@ def main():
             print(f"  ⚠ Quality: {report['overall']}")
     except Exception as e:
         print(f"  ✗ Quality check failed: {e}")
-    
+
     # Summary
     print("\n" + "=" * 60)
     if all_ok:
@@ -126,7 +126,7 @@ def main():
     else:
         print("✗ SOME CHECKS FAILED — Review output above")
     print("=" * 60)
-    
+
     return 0 if all_ok else 1
 
 

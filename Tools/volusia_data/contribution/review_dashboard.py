@@ -5,33 +5,34 @@ Web interface for reviewing and managing contributions.
 """
 
 import sqlite3
-from datetime import datetime, timezone
 from pathlib import Path
 
 DB_PATH = Path(__file__).resolve().parent.parent / "volusia.db"
+
 
 def get_db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
+
 def render_dashboard():
     """Render the contribution review dashboard."""
     conn = get_db()
-    
+
     # Get statistics
     total = conn.execute("SELECT COUNT(*) FROM submissions").fetchone()[0]
     queued = conn.execute("SELECT COUNT(*) FROM submissions WHERE status = 'queued'").fetchone()[0]
     approved = conn.execute("SELECT COUNT(*) FROM submissions WHERE status = 'approved'").fetchone()[0]
     rejected = conn.execute("SELECT COUNT(*) FROM submissions WHERE status = 'rejected'").fetchone()[0]
-    
+
     # Get recent submissions
     recent = conn.execute("""
         SELECT * FROM submissions 
         ORDER BY created_at DESC 
         LIMIT 50
     """).fetchall()
-    
+
     # Get by type
     by_type = conn.execute("""
         SELECT contribution_type, COUNT(*) as cnt 
@@ -39,17 +40,17 @@ def render_dashboard():
         GROUP BY contribution_type 
         ORDER BY cnt DESC
     """).fetchall()
-    
+
     # Get by status
-    by_status = conn.execute("""
+    conn.execute("""
         SELECT status, COUNT(*) as cnt 
         FROM submissions 
         GROUP BY status 
         ORDER BY cnt DESC
     """).fetchall()
-    
+
     conn.close()
-    
+
     html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -141,14 +142,14 @@ def render_dashboard():
           <tr><th>Type</th><th>Count</th></tr>
         </thead>
         <tbody>"""
-    
+
     for row in by_type:
         html += f"""
           <tr>
             <td><span class="badge badge-{row[0]}">{row[0]}</span></td>
             <td>{row[1]}</td>
           </tr>"""
-    
+
     html += """
         </tbody>
       </table>
@@ -165,19 +166,19 @@ def render_dashboard():
           </tr>
         </thead>
         <tbody>"""
-    
+
     for row in recent:
         html += f"""
           <tr>
-            <td>{row['submission_id'][:20]}...</td>
-            <td><span class="badge badge-{row['contribution_type']}">{row['contribution_type']}</span></td>
-            <td><span class="badge badge-{row['status']}">{row['status']}</span></td>
-            <td>{row['created_at'][:19]}</td>
+            <td>{row["submission_id"][:20]}...</td>
+            <td><span class="badge badge-{row["contribution_type"]}">{row["contribution_type"]}</span></td>
+            <td><span class="badge badge-{row["status"]}">{row["status"]}</span></td>
+            <td>{row["created_at"][:19]}</td>
             <td>
-              <a href="/review/{row['submission_id']}" class="btn btn-view">View</a>
+              <a href="/review/{row["submission_id"]}" class="btn btn-view">View</a>
             </td>
           </tr>"""
-    
+
     html += """
         </tbody>
       </table>
@@ -191,8 +192,9 @@ def render_dashboard():
   </footer>
 </body>
 </html>"""
-    
+
     return html
+
 
 if __name__ == "__main__":
     print(render_dashboard())

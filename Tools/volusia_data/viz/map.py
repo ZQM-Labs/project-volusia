@@ -15,10 +15,10 @@ from pathlib import Path
 
 def generate_choropleth(geojson_path, column, output_path, title=None):
     """Generate a choropleth map as HTML using Leaflet."""
-    
-    with open(geojson_path, 'r') as f:
+
+    with open(geojson_path, "r") as f:
         geojson = json.load(f)
-    
+
     # Extract values for color scaling
     values = []
     for feature in geojson.get("features", []):
@@ -28,25 +28,25 @@ def generate_choropleth(geojson_path, column, output_path, title=None):
             values.append(val)
         except (ValueError, TypeError):
             pass
-    
+
     if not values:
         print(f"ERROR: No numeric values found for column '{column}'", file=sys.stderr)
         return False
-    
+
     min_val = min(values)
     max_val = max(values)
     range_val = max_val - min_val if max_val != min_val else 1
-    
+
     # Color scale (blue to red)
     def get_color(value):
         ratio = (value - min_val) / range_val
         r = int(255 * ratio)
         b = int(255 * (1 - ratio))
         return f"rgb({r}, 50, {b})"
-    
+
     # Build map HTML
     map_title = title or f"Volusia County - {column}"
-    
+
     html = f"""<!DOCTYPE html>
 <html>
 <head>
@@ -116,7 +116,7 @@ def generate_choropleth(geojson_path, column, output_path, title=None):
     </script>
 </body>
 </html>"""
-    
+
     Path(output_path).write_text(html)
     print(f"Map saved to {output_path}")
     return True

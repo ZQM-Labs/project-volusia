@@ -62,25 +62,37 @@ def add_interview(args):
     """Add a new interview record."""
     init_table()
     conn = get_db()
-    
+
     themes = json.dumps(args.themes.split(",") if args.themes else [])
     needs = json.dumps(args.needs.split(",") if args.needs else [])
     gaps = json.dumps(args.gaps.split(",") if args.gaps else [])
-    
+
     now = datetime.now(timezone.utc).isoformat()
-    conn.execute("""
+    conn.execute(
+        """
         INSERT INTO interviews (stakeholder_name, stakeholder_role, interview_date, themes, needs_identified, data_gaps, follow_up_required, follow_up_date, notes, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (
-        args.name, args.role, args.date, themes, needs, gaps,
-        1 if args.follow_up else 0, args.follow_up_date, args.notes, now, now
-    ))
+    """,
+        (
+            args.name,
+            args.role,
+            args.date,
+            themes,
+            needs,
+            gaps,
+            1 if args.follow_up else 0,
+            args.follow_up_date,
+            args.notes,
+            now,
+            now,
+        ),
+    )
     conn.commit()
-    
+
     # Get the ID
     row = conn.execute("SELECT id FROM interviews ORDER BY id DESC LIMIT 1").fetchone()
     conn.close()
-    
+
     print(f"Interview recorded: ID={row['id']}")
     print(f"  Name: {args.name}")
     print(f"  Role: {args.role}")
@@ -93,48 +105,50 @@ def list_interviews(args):
     """List recent interviews."""
     init_table()
     conn = get_db()
-    
+
     query = "SELECT * FROM interviews ORDER BY interview_date DESC"
     params = []
-    
+
     if args.role:
         query = "SELECT * FROM interviews WHERE stakeholder_role = ? ORDER BY interview_date DESC"
         params = [args.role]
-    
+
     rows = conn.execute(query, params).fetchall()
     conn.close()
-    
+
     if not rows:
         print("No interviews recorded yet.")
         return
-    
+
     print(f"{'ID':<5} {'Date':<12} {'Role':<18} {'Name':<25} {'Themes':<30} {'Follow-up':<10}")
     print("-" * 100)
     for r in rows:
         themes = json.loads(r["themes"]) if r["themes"] else []
         follow = "Yes" if r["follow_up_required"] else "No"
-        print(f"{r['id']:<5} {r['interview_date'] or 'N/A':<12} {r['stakeholder_role']:<18} {r['stakeholder_name'] or 'Anonymous':<25} {', '.join(themes)[:28]:<30} {follow:<10}")
+        print(
+            f"{r['id']:<5} {r['interview_date'] or 'N/A':<12} {r['stakeholder_role']:<18} {r['stakeholder_name'] or 'Anonymous':<25} {', '.join(themes)[:28]:<30} {follow:<10}"
+        )
 
 
 def show_themes(args):
     """Show aggregated themes by role."""
     init_table()
     conn = get_db()
-    
+
     query = "SELECT themes, needs_identified, data_gaps, stakeholder_role FROM interviews"
     params = []
-    
+
     if args.role:
         query += " WHERE stakeholder_role = ?"
         params = [args.role]
-    
+
     rows = conn.execute(query, params).fetchall()
     conn.close()
-    
+
     themes_count = {}
     needs_count = {}
     gaps_count = {}
-    
+
     for r in rows:
         for t in json.loads(r["themes"] or "[]"):
             themes_count[t] = themes_count.get(t, 0) + 1
@@ -142,15 +156,15 @@ def show_themes(args):
             needs_count[n] = needs_count.get(n, 0) + 1
         for g in json.loads(r["data_gaps"] or "[]"):
             gaps_count[g] = gaps_count.get(g, 0) + 1
-    
+
     print("=== Themes ===")
     for t, c in sorted(themes_count.items(), key=lambda x: -x[1]):
         print(f"  {c}x {t}")
-    
+
     print("\n=== Needs Identified ===")
     for n, c in sorted(needs_count.items(), key=lambda x: -x[1]):
         print(f"  {c}x {n}")
-    
+
     print("\n=== Data Gaps ===")
     for g, c in sorted(gaps_count.items(), key=lambda x: -x[1]):
         print(f"  {c}x {g}")
@@ -162,27 +176,29 @@ def export_csv(args):
     conn = get_db()
     rows = conn.execute("SELECT * FROM interviews ORDER BY interview_date DESC").fetchall()
     conn.close()
-    
+
     if not rows:
         print("No interviews to export.")
         return
-    
+
     with open(args.output, "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["id", "name", "role", "date", "themes", "needs", "data_gaps", "follow_up", "notes"])
         for r in rows:
-            writer.writerow([
-                r["id"],
-                r["stakeholder_name"],
-                r["stakeholder_role"],
-                r["interview_date"],
-                "; ".join(json.loads(r["themes"] or "[]")),
-                "; ".join(json.loads(r["needs_identified"] or "[]")),
-                "; ".join(json.loads(r["data_gaps"] or "[]")),
-                "Yes" if r["follow_up_required"] else "No",
-                r["notes"],
-            ])
-    
+            writer.writerow(
+                [
+                    r["id"],
+                    r["stakeholder_name"],
+                    r["stakeholder_role"],
+                    r["interview_date"],
+                    "; ".join(json.loads(r["themes"] or "[]")),
+                    "; ".join(json.loads(r["needs_identified"] or "[]")),
+                    "; ".join(json.loads(r["data_gaps"] or "[]")),
+                    "Yes" if r["follow_up_required"] else "No",
+                    r["notes"],
+                ]
+            )
+
     print(f"Exported {len(rows)} interviews to {args.output}")
 
 
@@ -190,13 +206,15 @@ def show_summary(args):
     """Show summary statistics."""
     init_table()
     conn = get_db()
-    
+
     total = conn.execute("SELECT COUNT(*) FROM interviews").fetchone()[0]
-    by_role = conn.execute("SELECT stakeholder_role, COUNT(*) as cnt FROM interviews GROUP BY stakeholder_role").fetchall()
+    by_role = conn.execute(
+        "SELECT stakeholder_role, COUNT(*) as cnt FROM interviews GROUP BY stakeholder_role"
+    ).fetchall()
     follow_ups = conn.execute("SELECT COUNT(*) FROM interviews WHERE follow_up_required = 1").fetchone()[0]
-    
+
     conn.close()
-    
+
     print("=== Interview Summary ===")
     print(f"Total interviews: {total}")
     print(f"Follow-ups required: {follow_ups}")
@@ -208,7 +226,7 @@ def show_summary(args):
 def main():
     parser = argparse.ArgumentParser(description="Stakeholder Interview Tracking")
     sub = parser.add_subparsers(dest="command")
-    
+
     # Add command
     add_parser = sub.add_parser("add", help="Add a new interview")
     add_parser.add_argument("--name", default="", help="Stakeholder name")
@@ -220,24 +238,24 @@ def main():
     add_parser.add_argument("--follow-up", action="store_true", help="Follow-up required")
     add_parser.add_argument("--follow-up-date", default="", help="Follow-up date")
     add_parser.add_argument("--notes", default="", help="Additional notes")
-    
+
     # List command
     list_parser = sub.add_parser("list", help="List interviews")
     list_parser.add_argument("--role", choices=VALID_ROLES, help="Filter by role")
-    
+
     # Themes command
     themes_parser = sub.add_parser("themes", help="Show aggregated themes")
     themes_parser.add_argument("--role", choices=VALID_ROLES, help="Filter by role")
-    
+
     # Export command
     export_parser = sub.add_parser("export", help="Export to CSV")
     export_parser.add_argument("--output", default="interviews.csv", help="Output file")
-    
+
     # Summary command
     sub.add_parser("summary", help="Show summary statistics")
-    
+
     args = parser.parse_args()
-    
+
     if args.command == "add":
         add_interview(args)
     elif args.command == "list":

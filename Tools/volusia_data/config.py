@@ -8,6 +8,8 @@ repo-root `.env` file (never commit real keys to source control; real
 environment variables always take precedence over `.env` values).
 """
 
+__version__ = "1.0.0"
+
 import os
 from pathlib import Path
 
@@ -87,7 +89,7 @@ PIPELINE_LOG = TOOLS_DIR / "volusia_data" / "pipeline.log"
 PIPELINE_CACHE = TOOLS_DIR / "volusia_data" / "cache"
 
 # GitHub integration
-GITHUB_REPO = os.environ.get("GITHUB_REPO", "ZQM-Computing/project-volusia")
+GITHUB_REPO = os.environ.get("GITHUB_REPO", "ZQM-Labs/project-volusia")
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")  # For CI/CD automation
 
 # Contribution routing

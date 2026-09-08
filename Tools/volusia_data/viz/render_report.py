@@ -8,19 +8,17 @@ Usage:
 """
 
 import argparse
-import csv
-import json
 import sqlite3
 import sys
 from pathlib import Path
-from datetime import datetime, timezone
+from datetime import datetime
 
 
 def load_indicators_from_db(db_path):
     """Load current indicators from SQLite."""
     if not Path(db_path).exists():
         return {}
-    
+
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     cur = conn.execute("SELECT name, value, unit, source, vintage FROM indicators ORDER BY category, name")
@@ -38,21 +36,21 @@ def load_indicators_from_db(db_path):
 
 def render_template(template_path, indicators, output_path):
     """Render a markdown template with indicator values."""
-    
+
     template = Path(template_path).read_text(encoding="utf-8")
-    
+
     # Replace {{indicator_name}} placeholders
     for name, data in indicators.items():
         placeholder = "{{" + name + "}}"
-        value_str = f"{data['value']} {data['unit']}" if data['unit'] else data['value']
+        value_str = f"{data['value']} {data['unit']}" if data["unit"] else data["value"]
         template = template.replace(placeholder, value_str)
-    
+
     # Replace {{date}}
     template = template.replace("{{date}}", datetime.now().strftime("%Y-%m-%d"))
-    
+
     # Convert markdown to HTML (basic)
     html = markdown_to_html(template)
-    
+
     Path(output_path).write_text(html, encoding="utf-8")
     print(f"Report saved to {output_path}")
 
@@ -62,7 +60,7 @@ def markdown_to_html(md):
     lines = md.split("\n")
     html_parts = []
     in_table = False
-    
+
     html_parts.append("""<!DOCTYPE html>
 <html>
 <head>
@@ -80,10 +78,10 @@ def markdown_to_html(md):
     </style>
 </head>
 <body>""")
-    
+
     for line in lines:
         line = line.strip()
-        
+
         if line.startswith("# "):
             html_parts.append(f"<h1>{line[2:]}</h1>")
         elif line.startswith("## "):
@@ -114,13 +112,15 @@ def markdown_to_html(md):
             html_parts.append("<br>")
         else:
             html_parts.append(f"<p>{line}</p>")
-    
+
     if in_table:
         html_parts.append("</tbody></table>")
-    
-    html_parts.append('<div class="footer"><p>Project Volusia &middot; ZQM Labs &middot; Data from public U.S. government sources.</p></div>')
+
+    html_parts.append(
+        '<div class="footer"><p>Project Volusia &middot; ZQM Labs &middot; Data from public U.S. government sources.</p></div>'
+    )
     html_parts.append("</body></html>")
-    
+
     return "\n".join(html_parts)
 
 

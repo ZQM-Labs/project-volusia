@@ -33,7 +33,7 @@ def load_indicators():
     conn = get_db()
     rows = conn.execute("SELECT * FROM indicators ORDER BY category, name").fetchall()
     conn.close()
-    
+
     indicators = {}
     for r in rows:
         indicators[r["name"]] = {
@@ -51,9 +51,7 @@ def load_indicators():
 def load_contributions():
     """Load recent contributions."""
     conn = get_db()
-    rows = conn.execute(
-        "SELECT * FROM submissions ORDER BY submitted_at DESC LIMIT 10"
-    ).fetchall()
+    rows = conn.execute("SELECT * FROM submissions ORDER BY submitted_at DESC LIMIT 10").fetchall()
     conn.close()
     return [dict(r) for r in rows]
 
@@ -62,9 +60,7 @@ def load_interviews():
     """Load recent interviews."""
     conn = get_db()
     try:
-        rows = conn.execute(
-            "SELECT * FROM interviews ORDER BY interview_date DESC LIMIT 10"
-        ).fetchall()
+        rows = conn.execute("SELECT * FROM interviews ORDER BY interview_date DESC LIMIT 10").fetchall()
         conn.close()
         return [dict(r) for r in rows]
     except Exception:
@@ -74,22 +70,22 @@ def load_interviews():
 
 def generate_html(indicators, contributions, interviews, output_path):
     """Generate the weekly report HTML."""
-    
+
     now = datetime.now(timezone.utc)
-    week_ago = now - timedelta(days=7)
-    
+    now - timedelta(days=7)
+
     # Build indicator table rows
     indicator_rows = ""
     for name, data in sorted(indicators.items()):
         indicator_rows += f"""
         <tr>
             <td>{name}</td>
-            <td><strong>{data['value']} {data['unit']}</strong></td>
-            <td>{data['source']}</td>
-            <td>{data['vintage']}</td>
-            <td>{data['fetched_at'][:10] if data['fetched_at'] else 'N/A'}</td>
+            <td><strong>{data["value"]} {data["unit"]}</strong></td>
+            <td>{data["source"]}</td>
+            <td>{data["vintage"]}</td>
+            <td>{data["fetched_at"][:10] if data["fetched_at"] else "N/A"}</td>
         </tr>"""
-    
+
     # Build contributions section
     contrib_section = ""
     if contributions:
@@ -97,11 +93,11 @@ def generate_html(indicators, contributions, interviews, output_path):
         for c in contributions:
             contrib_rows += f"""
             <tr>
-                <td>{c['submission_id']}</td>
-                <td>{c['contribution_type']}</td>
-                <td>{c['status']}</td>
-                <td>{c['reviewer']}</td>
-                <td>{c['submitted_at'][:10]}</td>
+                <td>{c["submission_id"]}</td>
+                <td>{c["contribution_type"]}</td>
+                <td>{c["status"]}</td>
+                <td>{c["reviewer"]}</td>
+                <td>{c["submitted_at"][:10]}</td>
             </tr>"""
         contrib_section = f"""
         <h2>Recent Contributions</h2>
@@ -111,7 +107,7 @@ def generate_html(indicators, contributions, interviews, output_path):
         </table>"""
     else:
         contrib_section = "<h2>Recent Contributions</h2><p>No contributions this week.</p>"
-    
+
     # Build interviews section
     interview_section = ""
     if interviews:
@@ -120,11 +116,11 @@ def generate_html(indicators, contributions, interviews, output_path):
             themes = json.loads(i.get("themes", "[]") or "[]")
             int_rows += f"""
             <tr>
-                <td>{i['stakeholder_name'] or 'Anonymous'}</td>
-                <td>{i['stakeholder_role']}</td>
-                <td>{i['interview_date']}</td>
-                <td>{', '.join(themes)}</td>
-                <td>{'Yes' if i['follow_up_required'] else 'No'}</td>
+                <td>{i["stakeholder_name"] or "Anonymous"}</td>
+                <td>{i["stakeholder_role"]}</td>
+                <td>{i["interview_date"]}</td>
+                <td>{", ".join(themes)}</td>
+                <td>{"Yes" if i["follow_up_required"] else "No"}</td>
             </tr>"""
         interview_section = f"""
         <h2>Recent Interviews</h2>
@@ -132,13 +128,13 @@ def generate_html(indicators, contributions, interviews, output_path):
             <tr><th>Name</th><th>Role</th><th>Date</th><th>Themes</th><th>Follow-up</th></tr>
             {int_rows}
         </table>"""
-    
+
     html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Project Volusia — Weekly Report {now.strftime('%Y-%m-%d')}</title>
+    <title>Project Volusia — Weekly Report {now.strftime("%Y-%m-%d")}</title>
     <style>
         body {{ font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; max-width: 900px; margin: 0 auto; padding: 2rem; line-height: 1.6; background: #f8fafc; color: #1e293b; }}
         h1 {{ color: #0f172a; border-bottom: 2px solid #0f172a; padding-bottom: 0.5rem; }}
@@ -157,7 +153,7 @@ def generate_html(indicators, contributions, interviews, output_path):
 </head>
 <body>
     <h1>Project Volusia — Weekly Report</h1>
-    <p class="meta">Generated: {now.strftime('%Y-%m-%d %H:%M UTC')} | Data sources: Census PEP, NOAA NCEI, BLS QCEW, BLS LAUS</p>
+    <p class="meta">Generated: {now.strftime("%Y-%m-%d %H:%M UTC")} | Data sources: Census PEP, NOAA NCEI, BLS QCEW, BLS LAUS</p>
     
     <h2>Current Indicators</h2>
     <table>
@@ -175,7 +171,7 @@ def generate_html(indicators, contributions, interviews, output_path):
     </div>
 </body>
 </html>"""
-    
+
     Path(output_path).write_text(html, encoding="utf-8")
     print(f"Report saved to {output_path}")
 
@@ -184,22 +180,22 @@ def main():
     parser = argparse.ArgumentParser(description="Generate weekly report")
     parser.add_argument("--output", default=None, help="Output HTML file path")
     args = parser.parse_args()
-    
+
     if not DB_PATH.exists():
         print("ERROR: Database does not exist. Run refresh_v2.py first.")
         sys.exit(1)
-    
+
     indicators = load_indicators()
     contributions = load_contributions()
     interviews = load_interviews()
-    
+
     if not args.output:
         date_str = datetime.now().strftime("%Y-%m-%d")
         args.output = f"Reports/weekly_{date_str}.html"
-    
+
     # Ensure output directory exists
     Path(args.output).parent.mkdir(parents=True, exist_ok=True)
-    
+
     generate_html(indicators, contributions, interviews, args.output)
     print(f"Indicators: {len(indicators)}")
     print(f"Contributions: {len(contributions)}")
