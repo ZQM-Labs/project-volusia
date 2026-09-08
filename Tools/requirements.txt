@@ -3,4 +3,4 @@ uvicorn[standard]>=0.30
 python-multipart>=0.0.9
 pandas>=2.2
 requests>=2.31
-pyarrow>=16.0
+pyarrow>=25.0.1
