@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine, Column, String, Integer, DateTime, Text, Float, Boolean, ForeignKey, Enum as SQLEnum
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import sessionmaker
 from datetime import datetime
 import enum
 
@@ -42,7 +42,7 @@ class Pathway(str, enum.Enum):
     F = "F"
     G = "G"
     H = "H"
-    I = "I"
+    I = "I"  # noqa: E741 - pathway letters are spec-defined
     AGENT_ITEM = "agent-item"
 
 class SubmissionStatus(str, enum.Enum):

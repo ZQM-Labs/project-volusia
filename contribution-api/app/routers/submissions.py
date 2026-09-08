@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
@@ -8,9 +8,7 @@ import uuid
 
 from app.database import get_db
 from app.models import (
-    Contributor, Submission, AgentItem, APILog,
-    Pathway, SubmissionStatus, ItemType, HumanOwner,
-    RateLimitTier
+    Contributor, Submission, AgentItem, Pathway, SubmissionStatus, ItemType, HumanOwner
 )
 from app.routers.auth import get_current_contributor
 

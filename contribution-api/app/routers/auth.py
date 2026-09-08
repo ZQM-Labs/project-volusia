@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
@@ -54,10 +54,29 @@ class ContributorProfile(BaseModel):
 
 # ─── Helpers ─────────────────────────────────────────────────────
 def hash_password(password: str) -> str:
-    return hashlib.sha256(password.encode()).hexdigest()
+    """Hash a password with a salted KDF (PBKDF2-HMAC-SHA256, 260k iters).
+
+    Replaces the earlier unsalted single-SHA-256, which is trivially weak.
+    Format: ``pbkdf2$iterations$salt$hash`` (hex).
+    """
+    salt = secrets.token_hex(16)
+    digest = hashlib.pbkdf2_hmac("sha256", password.encode(), bytes.fromhex(salt), 260_000)
+    return f"pbkdf2$260000${salt}${digest.hex()}"
+
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return hash_password(plain) == hashed
+    """Verify a plaintext password against a pbkdf2$... hash.
+
+    Accepts the legacy unsalted-SHA-256 format for backward compatibility
+    (reads it, verifies, and reports mismatch) but never writes it.
+    """
+    if hashed.startswith("pbkdf2$"):
+        _, _iter, salt, stored = hashed.split("$")
+        digest = hashlib.pbkdf2_hmac("sha256", plain.encode(), bytes.fromhex(salt), int(_iter))
+        return secrets.compare_digest(digest.hex(), stored)
+    # Legacy unsalted SHA-256 (pre-hardening). Still read so existing users
+    # can authenticate; a successful match is a signal to rehash on next login.
+    return secrets.compare_digest(hashlib.sha256(plain.encode()).hexdigest(), hashed)
 
 def generate_api_key() -> str:
     return f"pv_{secrets.token_urlsafe(32)}"
