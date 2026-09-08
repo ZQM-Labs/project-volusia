@@ -13,6 +13,8 @@
 | Add a data source | [Data Sources](data-sources/adding-sources.md) |
 | Deploy the portal | [Deployment](deployment/guide.md) |
 | Contribute code | [Contributing](contributing/guide.md) |
+| Fix a problem | [Troubleshooting](troubleshooting/common-issues.md) |
+| Get quick answers | [FAQ](troubleshooting/faq.md) |
 | Connect frontend to backend | [Connection Guide](../CONNECTION.md) |
 
 ---
@@ -52,6 +54,7 @@ docs/
 │   ├── code-style.md           # Code style guide
 │   ├── pull-request.md         # PR process
 │   └── issues.md               # Issue reporting
-└── troubleshooting/
-    ├── common-issues.md        # Common issues and fixes
-    └── faq.md                  # FAQ
+├── troubleshooting/
+│   ├── common-issues.md        # Common issues and fixes
+│   └── faq.md                  # FAQ
+└── README.md                   # This file
