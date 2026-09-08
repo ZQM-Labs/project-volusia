@@ -1,0 +1,49 @@
+# Pre-commit hooks for Project Volusia
+# Install: pre-commit install
+# Run manually: pre-commit run --all-files
+
+repos:
+  # Ruff - faster than flake8 + black
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.4
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+      - id: ruff-format
+
+  # Trailing whitespace
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+      - id: debug-statements
+      - id: mixed-line-ending
+        args: [--fix=lf]
+
+  # Check hooks for Python
+  - repo: https://github.com/Lucas-C/pre-commit-hooks-sensible
+    rev: v1.2.2
+    hooks:
+      - id: sensible-pyyaml-loader
+
+  # Forbidden headers (prevent future imports at top)
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: detect-private-key
+      - id: detect-aws-key
+      - id: check-added-gh-actions
+
+  # Check for TODOs in production code
+  - repo: local
+    hooks:
+      - id: no-todos
+        name: no-todos-in-prod
+        entry: bash -c 'grep -r "TODO\|FIXME\|XXX" --include="*.py" . 2>/dev/null | grep -v tests/; test True -eq 0 && exit 1 || exit 0'
+        language: system
+        pass_filenames: false
+        verbose: true

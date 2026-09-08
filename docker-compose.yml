@@ -1,0 +1,53 @@
+version: "3.8"
+
+services:
+  # Main portal API
+  portal:
+    build: .
+    ports:
+      - "8789:8789"
+    volumes:
+      - ./Tools/volusia_data:/app/Tools/volusia_data
+      - ./Data:/app/Data
+      - ./volusia.db:/app/Tools/volusia_data/volusia.db
+    environment:
+      - VOLUSIA_PORT=8789
+      - VOLUSIA_DB_PATH=/app/Tools/volusia_data/volusia.db
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8789/api/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Data refresh worker
+  refresh:
+    build: .
+    volumes:
+      - ./Tools/volusia_data:/app/Tools/volusia_data
+      - ./volusia.db:/app/Tools/volusia_data/volusia.db
+      - ./fetch_log.jsonl:/app/fetch_log.jsonl
+    environment:
+      - CENSUS_API_KEY
+      - BLS_API_KEY
+      - BEA_API_KEY
+    restart: unless-stopped
+
+  # Data explorer (optional)
+  explorer:
+    build: .
+    ports:
+      - "8791:8791"
+    command: python -c "from volusia_data.portal_app import app; import uvicorn; uvicorn.run(app, host='0.0.0.0', port=8791)"
+    volumes:
+      - ./Tools/volusia_data:/app/Tools/volusia_data
+      - ./volusia.db:/app/Tools/volusia_data/volusia.db
+    environment:
+      - VOLUSIA_PORT=8791
+    depends_on:
+      - portal
+    restart: unless-stopped
+
+volumes:
+  data:
+  logs:

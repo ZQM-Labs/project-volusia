@@ -1,0 +1,62 @@
+{
+  "generated_at": "2026-09-05T21:52:21.066496-04:00",
+  "total_indicators": 187,
+  "charts": [
+    {
+      "name": "population_trend.png",
+      "description": "Volusia County population 2022-2024"
+    },
+    {
+      "name": "unemployment_rates.png",
+      "description": "Unemployment rate indicators"
+    }
+  ],
+  "sources": [
+    "BLS QCEW",
+    "CMS",
+    "Various",
+    "BLS LAUS",
+    "CrimeByCounty",
+    "Census CBP",
+    "NOAA NCEI",
+    "Third Party",
+    "EPA",
+    "USDA FSA",
+    "Census ACS",
+    "USACE",
+    "USGS/NOAA",
+    "Census",
+    "History",
+    "Volusia County EDC",
+    "FCC",
+    "USA Today Co.",
+    "NOAA",
+    "Florida",
+    "Volusia County",
+    "Daytona Beach News-Journal",
+    "FL DOH",
+    "Wire 3",
+    "SpotCrime",
+    "Volusia County GIS",
+    "Halifax Health",
+    "FDOT",
+    "FPL",
+    "Zillow",
+    "Volusia County Sheriff",
+    "FEMA",
+    "Team Volusia",
+    "USGS",
+    "Volusia County Schools",
+    "Regrid",
+    "CDC",
+    "USFWS",
+    "VCPA",
+    "Volusia Business Resources",
+    "FDLE",
+    "Census PEP",
+    "Florida GIO",
+    "FL DOE",
+    "Florida DOE",
+    "Volusia County Property Appraiser"
+  ]
+}

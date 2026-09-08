@@ -1,0 +1,48 @@
+# Code owners for Project Volusia
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Core team - default owner for everything
+* @zqmcomputing
+
+# Data pipeline
+Tools/volusia_data/refresh_v2.py   @zqmcomputing
+Tools/volusia_data/fetchers/       @zqmcomputing
+Tools/volusia_data/config.py       @zqmcomputing
+
+# Portal API
+Tools/volusia_data/portal_app.py   @zqmcomputing
+Tools/volusia_data/portal_contribute.py @zqmcomputing
+
+# Contribution API
+Tools/volusia_data/contribution_api.py @zqmcomputing
+
+# Quality validation
+Tools/volusia_data/quality/        @zqmcomputing
+
+# Tests
+tests/                            @zqmcomputing
+
+# CI/CD
+.github/workflows/                @zqmcomputing
+.github/CODEOWNERS                @zqmcomputing
+.github/dependabot.yml            @zqmcomputing
+
+# Documentation
+README.md                          @zqmcomputing
+CONTRIBUTING.md                    @zqmcomputing
+API.md                             @zqmcomputing
+openapi.yaml                       @zqmcomputing
+*.md                               @zqmcomputing
+
+# Security
+SECURITY.md                        @zqmcomputing
+
+# Docker
+Dockerfile                         @zqmcomputing
+docker-compose.yml                 @zqmcomputing
+.dockerignore                      @zqmcomputing
+
+# Configuration
+pyproject.toml                     @zqmcomputing
+requirements*.txt                  @zqmcomputing
+.pre-commit-config.yaml            @zqmcomputing
