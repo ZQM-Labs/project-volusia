@@ -27,7 +27,6 @@ concurrency:
 jobs:
   lint:
     runs-on: ubuntu-latest
-    cache: true
     steps:
       - uses: actions/checkout@v4
         with:
@@ -117,7 +116,7 @@ jobs:
           pip install dist/*.whl --force-reinstall
           python -c "import volusia_data; print(f'Package OK: {volusia_data.__version__}')"
       
-            - name: Upload artifacts
+      - name: Upload artifacts
         uses: actions/upload-artifact@v5
         with:
           name: dist-packages
