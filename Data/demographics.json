@@ -1,0 +1,58 @@
+[
+  {
+    "id": 1,
+    "name": "total_population_pep_2022",
+    "value": "580529",
+    "unit": "persons",
+    "category": "Demographics",
+    "source": "Census PEP",
+    "source_url": "https://www2.census.gov/programs-surveys/popest/datasets/2020-2025/counties/totals/co-est2025-alldata.csv",
+    "vintage": "2022",
+    "fetched_at": "2026-09-09T12:13:52.646048+00:00",
+    "description": "Census PEP county population estimate, July 1 2022",
+    "checksum": "0241f939e78d757a",
+    "signature": ""
+  },
+  {
+    "id": 2,
+    "name": "total_population_pep_2023",
+    "value": "591936",
+    "unit": "persons",
+    "category": "Demographics",
+    "source": "Census PEP",
+    "source_url": "https://www2.census.gov/programs-surveys/popest/datasets/2020-2025/counties/totals/co-est2025-alldata.csv",
+    "vintage": "2023",
+    "fetched_at": "2026-09-09T12:13:52.649044+00:00",
+    "description": "Census PEP county population estimate, July 1 2023",
+    "checksum": "925919c2a1d5a2fb",
+    "signature": ""
+  },
+  {
+    "id": 3,
+    "name": "total_population_pep_2024",
+    "value": "601107",
+    "unit": "persons",
+    "category": "Demographics",
+    "source": "Census PEP",
+    "source_url": "https://www2.census.gov/programs-surveys/popest/datasets/2020-2025/counties/totals/co-est2025-alldata.csv",
+    "vintage": "2024",
+    "fetched_at": "2026-09-09T12:13:52.656844+00:00",
+    "description": "Census PEP county population estimate, July 1 2024",
+    "checksum": "4e08694a2d24a1c3",
+    "signature": ""
+  },
+  {
+    "id": 4,
+    "name": "total_population_pep_2025",
+    "value": "606573",
+    "unit": "persons",
+    "category": "Demographics",
+    "source": "Census PEP",
+    "source_url": "https://www2.census.gov/programs-surveys/popest/datasets/2020-2025/counties/totals/co-est2025-alldata.csv",
+    "vintage": "2025",
+    "fetched_at": "2026-09-09T12:13:52.656844+00:00",
+    "description": "Census PEP county population estimate, July 1 2025",
+    "checksum": "3b01f7b7d36d0f73",
+    "signature": ""
+  }
+]

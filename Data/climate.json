@@ -1,0 +1,44 @@
+[
+  {
+    "id": 5,
+    "name": "avg_max_temp",
+    "value": "281.4",
+    "unit": "tenths C",
+    "category": "Climate",
+    "source": "NOAA NCEI",
+    "source_url": "https://www.ncei.noaa.gov/access/services/data/v1?station=USW00012838",
+    "vintage": "2026",
+    "fetched_at": "2026-09-09T12:13:53.260116+00:00",
+    "description": "NOAA average daily max temperature",
+    "checksum": "24cc3861b374b32b",
+    "signature": ""
+  },
+  {
+    "id": 6,
+    "name": "avg_min_temp",
+    "value": "189.3",
+    "unit": "tenths C",
+    "category": "Climate",
+    "source": "NOAA NCEI",
+    "source_url": "https://www.ncei.noaa.gov/access/services/data/v1",
+    "vintage": "2026",
+    "fetched_at": "2026-09-09T12:13:53.260116+00:00",
+    "description": "NOAA average daily min temperature",
+    "checksum": "725a14857022c34a",
+    "signature": ""
+  },
+  {
+    "id": 7,
+    "name": "total_precip",
+    "value": "21853",
+    "unit": "tenths mm",
+    "category": "Climate",
+    "source": "NOAA NCEI",
+    "source_url": "https://www.ncei.noaa.gov/access/services/data/v1",
+    "vintage": "2026",
+    "fetched_at": "2026-09-09T12:13:53.260116+00:00",
+    "description": "NOAA total precipitation",
+    "checksum": "a4846f5fbd4bc039",
+    "signature": ""
+  }
+]

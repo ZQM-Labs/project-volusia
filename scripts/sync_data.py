@@ -22,6 +22,9 @@ from pathlib import Path
 from datetime import datetime
 
 DB_PATH = Path(__file__).parent.parent / "Tools" / "volusia_data" / "volusia.db"
+# Fallback for different repo structures
+if not DB_PATH.exists():
+    DB_PATH = Path(__file__).parent.parent / "data" / "volusia.db"
 OUTPUT_DIR = Path(__file__).parent.parent / "data"
 
 def export_indicators():

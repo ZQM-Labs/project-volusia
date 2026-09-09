@@ -1,0 +1,10 @@
+{
+  "status": "healthy",
+  "db_exists": true,
+  "indicator_count": 7,
+  "categories": [
+    "Climate",
+    "Demographics"
+  ],
+  "timestamp": "2026-09-09T12:15:09.491370Z"
+}
