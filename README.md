@@ -1,304 +1,134 @@
-# Architecture — Project Volusia
+# Project Volusia — Deployment & API Architecture Reference
 
-> System architecture, components, and data flow.
-> Updated 2026-09-11 — verified against live system.
+## Overview
 
----
+The Project Volusia stack consists of three layers:
+1. **Backend** (FastAPI on `:8000`) — data API, indicator endpoints, gamification
+2. **Nginx** (port 80, Windows NSSM) — static file serving + reverse proxy to backend
+3. **cloudflared** — tunnel to `*.zqmlabs.com`
 
-## System Overview
-
-```
-┌──────────────────────────────────────────────────────────────────────┐
-│                     External Data Sources (112+)                       │
-│  Census │ BLS │ BEA │ NOAA │ EPA │ USGS │ FEMA │ HUD │ USDA │ CDC   │
-│  FDLE │ FL DEP │ FL DOE │ FDOT │ Volusia County │ C2ER              │
-└──────────────────────────────┬───────────────────────────────────────┘
-                               │
-                               ▼
-┌──────────────────────────────────────────────────────────────────────┐
-│                   Data Pipeline (refresh_v2.py)                        │
-│  Fetch → Validate → Transform → Store → Quality Check              │
-└──────────────────────────────┬───────────────────────────────────────┘
-                               │
-                               ▼
-┌──────────────────────────────────────────────────────────────────────┐
-│              SQLite Database (volusia.db, WAL mode)                    │
-│  indicators │ gamification │ gamification_history │ gamification_state│
-│  leaderboard │ submissions │ audit_log │ time_series                 │
-│  50 indicators across 11 categories                                   │
-└──────────────────────────────┬───────────────────────────────────────┘
-                               │
-          ┌────────────────────┼────────────────────┐
-          ▼                    ▼                    ▼
-┌───────────────┐    ┌───────────────┐    ┌───────────────┐
-│  FastAPI      │    │  React SPA    │    │ Static HTML   │
-│  Backend      │    │  (Vite)       │    │ (generate.py) │
-│  :8000       │    │  dist/        │    │  /data/       │
-└──────┬────────┘    └──────┬────────┘    └──────┬────────┘
-       │                    │                     │
-       └────────────────────┼─────────────────────┘
-                            ▼
-┌──────────────────────────────────────────────────────────────────────┐
-│         nginx (:80, Windows NSSM — Volusia-Nginx)                     │
-│  • /health, /latest, /indicators → proxy to backend :8000          │
-│  • /data/indicators.json, /data/latest.json → proxy to backend      │
-│  • /gamification/ (all methods) → proxy to backend /gamification/   │
-│  • /data/ → static category HTML pages                               │
-│  • / → React SPA catch-all (try_files $uri $uri/ /index.html)       │
-│  • Security headers (CSP, HSTS, X-Frame-Options)                    │
-└──────────────────────────────┬───────────────────────────────────────┘
-                               │
-┌──────────────────────────────┼───────────────────────────────────────┐
-│                              ▼                                         │
-│  ┌─────────────────────────────────┐                                │
-│  │   cloudflared (HTTPS, :443)      │                                │
-│  │   Routes *.zqmlabs.com → :80    │                                │
-│  │   TLS termination at edge        │                                │
-│  └─────────────────────────────────┘                                │
-└──────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Components
-
-### 1. Data Sources
-
-**Tier 1 — Government** (highest trust): Census Bureau, BLS, BEA, NOAA, EPA, USGS, FEMA, HUD, USDA, CDC, FDLE, FL DEP, FL DOE, FDOT, Volusia County
-
-**Tier 2 — Academic/Nonprofit** (verified): Universities (.edu), FRED, County Health Rankings, Zillow, Realtor.com
-
-**Tier 3 — Commercial** (use with caution): SpotCrime, CrimeByCounty, ZipCheckup (cross-reference required)
-
-### 2. Data Pipeline
-
-**File**: `scripts/refresh_v2.py`
+## Directory Structure
 
 ```
-1. Fetch data from source (API, CSV download, scraping)
-2. Validate format and range
-3. Transform to standard schema
-4. Store in SQLite
-5. Run quality checks
-6. Log to audit_log
+C:/Users/zqmco/
+├── scoop/persist/nginx/           # Host-level nginx
+│   ├── conf/nginx.conf            # Main nginx config (active)
+│   ├── conf/mime.types            # MIME type mappings
+│   ├── html/                      # Web root
+│   │   ├── index.html             # React SPA entry
+│   │   ├── assets/                # React hashed assets
+│   │   └── data/                  # Static category pages
+│   │       ├── economic/index.html
+│   │       ├── tourism/index.html
+│   │       ├── transportation/index.html
+│   │       ├── climate/index.html
+│   │       ├── demographics/index.html
+│   │       ├── real-estate/index.html
+│   │       ├── education/index.html
+│   │       ├── government-finance/index.html
+│   │       ├── public-safety/index.html
+│   │       └── health/index.html
+│   └── logs/                      # access.log, error.log
+├── project-volusia-web/           # Static site generator
+│   ├── generate.py                # Generates all static HTML pages
+│   ├── data/                      # Source category data
+│   │   ├── economic/
+│   │   ├── tourism/
+│   │   └── ...
+│   ├── start-server.bat           # NSSM VolusiaWeb startup
+│   ├── start-all.bat              # Start all services
+│   └── index.html
+├── Docker/volusia-portal/         # Backend + React app
+│   ├── backend/main.py            # FastAPI application
+│   ├── backend/gamification.py    # Gamification engine
+│   ├── data/                      # Database (NOT read by backend)
+│   │   ├── volusia.db             # Stale copy (same as volusia-portal/data/)
+│   │   └── cache/                 # JSON cache files
+│   │       ├── latest.json
+│   │       ├── indicators.json
+│   │       └── {category}.json
+│   ├── data/volusia.db            # Symlink/copy of volusia-portal/data/
+│   ├── src/App.tsx                # React routes
+│   ├── dist/                      # React build output
+│   └── scripts/
+│       ├── deploy.py              # Automated deploy pipeline
+│       ├── deploy.sh              # Bash wrapper
+│       ├── refresh_v2.py          # Data refresh utility
+│       └── generate.py            # Backend data refresh
+├── Docker/                        # Docker compose (optional)
+│   └── docker-compose.yml
+├── volusia-portal/                # Project root (DB lives here)
+│   └── data/volusia.db            # PRIMARY database (50 indicators)
+└── .cloudflared/
+    └── config.yml                 # Cloudflare tunnel config
 ```
 
-Triggered via `POST /refresh` or `scripts/deploy.py`.
+## API Endpoints (Backend :8000)
 
-### 3. Database Schema
+### Health & Metadata
+| Endpoint | Method | Description | Response |
+|----------|--------|-------------|----------|
+| `/health` | GET | Health check | `{"status":"healthy","indicator_count":50,"categories":{...}}` |
+| `/latest` | GET | Latest indicators | `{"indicators":[...]}` |
 
-**File**: `data/volusia.db` — SQLite with WAL mode, indexed on name/category
+### Indicators
+| Endpoint | Method | Description | Response |
+|----------|--------|-------------|----------|
+| `/indicators` | GET | All 50 indicators | `{"count":50,"indicators":[...]}` |
+| `/indicators/{name}` | GET | Single indicator | `{id,name,value,unit,...}` |
+|| `/data/indicators.json` | GET | Full indicator JSON | `{"count":50,"indicators":[...]}` |
+| `/data/latest.json` | GET | Latest data snapshot | JSON |
 
-#### indicators
-| Column | Type | Description |
-|--------|------|-------------|
-| id | INTEGER PK | Auto-increment |
-| name | TEXT | Unique indicator name |
-| value | TEXT | Numeric or text value |
-| unit | TEXT | Unit of measurement |
-| category | TEXT | Category |
-| source | TEXT | Originating agency |
-| source_url | TEXT | Specific URL |
-| vintage | TEXT | Year or date range |
-| description | TEXT | Human-readable description |
-| fetched_at | TEXT | Fetch timestamp |
+### Gamification
+| Endpoint | Method | Description | Response |
+|----------|--------|-------------|----------|
+| `/gamification` | GET | Gamification dashboard (SPA) | HTML page |
+| `/gamification/leaderboard` | GET | Leaderboard JSON | `{"leaderboard":[...]}` |
+| `/gamification/missions` | GET | Missions list | JSON |
+| `/gamification/pulse` | GET | Activity pulse | HTML page |
+| `/gamification/profile/{user_id}` | GET | User profile | JSON |
+| `/gamification/stats/{user_id}` | GET | User stats | JSON |
+| `/gamification/achievements/{user_id}` | GET | Achievements | JSON |
+| `/gamification/history/{user_id}` | GET | XP history | JSON |
+| `/gamification/visit/{user_id}` | POST | Record visit + award XP | `{"xp_earned":0,"level":1,...}` |
+| `/gamification/xp/{user_id}` | POST | Award XP | `{"total_xp":...,...}` |
+| `/gamification/contribute` | POST | Submit contribution | `{"status":"queued",...}` |
 
-#### gamification
-| Column | Type | Description |
-|--------|------|-------------|
-| id | INTEGER PK | Auto-increment |
-| user_id | TEXT | User identifier |
-| total_xp | INTEGER | Cumulative XP |
-| level | INTEGER | Current level |
-| streak_days | INTEGER | Consecutive visit days |
-| indicators_viewed | INTEGER | Indicators explored |
-| datasets_downloaded | INTEGER | Downloads count |
+### Admin
+| Endpoint | Method | Description | Response |
+|----------|--------|-------------|----------|
+| `/refresh` | POST | Refresh all data | `{"status":"ok"}` |
+| `/categories` | GET | All categories | `{category:count,...}` |
 
-#### Other tables
-- `gamification_history` — XP history per user
-- `gamification_state` — Session state (daily visit timestamps)
-- `leaderboard` — Cached leaderboard rankings
-- `submissions` — User contributions awaiting review
-- `sqlite_sequence` — Auto-increment tracking
-- `time_series` — Historical indicator values
-
-### 4. Web Layer
-
-#### Backend API (port 8000)
-**File**: `backend/main.py`
-
-FastAPI application with endpoints: indicators, gamification, categories, refresh, latest, health.
-
-**DB_PATH**: `Path(__file__).resolve().parent.parent / "data" / "volusia.db"` — resolves to `C:\Users\zqmco\Docker\volusia-portal\data\volusia.db`
-
-Features: CORS middleware, rate limiting, HMAC auth for `/refresh`, SQLite + WAL mode.
-
-**Routes**:
-- `GET /health` — Health check + indicator count + categories
-- `GET /indicators` — All 50 indicators
-- `GET /indicators/{name}` — Single indicator
-- `GET /latest` — Latest data snapshot
-- `GET /data/indicators.json` — Full indicator JSON (338 entries)
-- `GET /data/latest.json` — Latest data snapshot JSON
-- `GET /categories` — All categories
-- `POST /refresh` — Refresh all data
-- `GET /gamification` — Gamification dashboard page (SPA)
-- `GET /gamification/leaderboard` — Leaderboard JSON
-- `GET /gamification/missions` — Missions list
-- `GET /gamification/pulse` — Activity pulse
-- `GET /gamification/profile/{user_id}` — User profile
-- `GET /gamification/stats/{user_id}` — User stats
-- `GET /gamification/achievements/{user_id}` — Achievements
-- `POST /gamification/visit/{user_id}` — Record visit (XP)
-- `POST /gamification/xp/{user_id}` — Award XP
-- `GET /gamification/history/{user_id}` — XP history
-- `POST /gamification/contribute` — Submit contribution
-
-#### Web Server (port 80)
-**File**: `C:\Users\zqmco\scoop\persist\nginx\conf\nginx.conf`
-
-nginx as Windows NSSM service (`Volusia-Nginx`):
-- Serves React SPA at `/` (catch-all)
-- Serves static category pages at `/data/`
-- Proxies API endpoints to backend on `:8000`
-- Security headers (CSP, HSTS, X-Frame-Options, X-Content-Type-Options)
-- `location = /health` → proxy to backend
-- `location = /latest` → proxy to backend
-- `location = /indicators` → proxy to backend
-- `location = /data/indicators.json` → proxy to backend
-- `location = /data/latest.json` → proxy to backend (rewrite to `/latest`)
-- `location = /gamification` → 301 redirect to `/gamification/`
-- `location = /gamification/` → 301 redirect to `/gamification`
-- `location /gamification/` → proxy all methods to backend `/gamification` (strips prefix)
-- `location = /refresh` → proxy POST to backend `/refresh`
-- `location = /gamification/leaderboard` → proxy to backend `/gamification/leaderboard`
-- `location ^~ /data/` → serve static category HTML
-- `location /` → React SPA catch-all (`try_files $uri $uri/ /index.html`)
-
-**Important**: nginx.conf does NOT include `conf.d/`. All proxy locations are inline in nginx.conf. The `conf.d/default.conf` file exists but is not loaded.
-
-**nginx -t**: `C:\Users\zqmco\scoop\apps\nginx\current\nginx.exe -t -p C:\Users\zqmco\scoop\persist\nginx`
-
-**Note on NSSM**: On Windows, `nssm restart Volusia-Nginx` may not fully kill the master process. If config changes don't take effect, kill all nginx.exe processes with `taskkill /F /FI "imagename eq nginx.exe"` then `nssm start Volusia-Nginx`.
-
-#### HTTPS Tunnel
-**File**: `C:\Users\zqmco\.cloudflared\config.yml`
-
-cloudflared as Windows service (`cloudflared`):
-- Routes `*.zqmlabs.com` → `http://127.0.0.1:80`
-- TLS termination at cloudflared edge
-- DNS handled by cloudflared proxy
-
-### 5. Frontend
-
-#### React SPA
-**File**: `volusia-portal/src/`
-
-React 18 + Vite + TypeScript + Tailwind CSS with Nivo charts and Leaflet maps.
-Build output: `dist/` → synced to nginx `html/` during deploy.
-
-#### Static Page Generation
-**File**: `project-volusia-web/generate.py`
-
-Generates category HTML pages from backend data:
-- Output: `project-volusia-web/data/{category}/index.html`
-- Copied to nginx `html/data/` during deploy
-
-### 6. Service Startup Scripts
-
-| Script | Purpose |
-|--------|---------|
-| `project-volusia-web\start-server.bat` | NSSM VolusiaWeb — runs `uvicorn main:app --port 8000` from `Docker\volusia-portal\backend\` |
-| `project-volusia-web\start-all.bat` | Starts all services including static site on :8089 |
-| `project-volusia-web\start-backend.bat` | Starts backend only |
-| `project-volusia-web\start-www-redirect.bat` | Static site redirect |
-
-**Important**: `start-server.bat` does `cd /d C:\Users\zqmco\Docker\volusia-portal\backend` then runs uvicorn. The `DB_PATH` in `main.py` resolves relative to `backend/main.py`, so it reads from `C:\Users\zqmco\Docker\volusia-portal\data\volusia.db` (the project root's data directory, NOT `backend/data/`).
-
-**There are TWO volusia.db files**:
-- `C:\Users\zqmco\Docker\volusia-portal\data\volusia.db` — **PRIMARY** (50 indicators, what the backend reads)
-- `C:\Users\zqmco\Docker\volusia-portal\backend\data\volusia.db` — **STALE COPY** (copy of primary)
-
-### 7. Docker Compose (Optional)
-
-**File**: `docker-compose.yml`
-
-Defines: `frontend` (port 8080), `backend` (internal only), `searxng` (port 8081, profile: search).
-Backend is NOT exposed to the internet — reached through nginx via Docker network.
-
-### 8. Gamification Engine
-
-**File**: `backend/gamification.py`
-
-- 30 missions across 5 tiers
-- 14 pathways (A–S)
-- XP-based scoring system
-- Contributor badges and stats
-- Daily visit tracking with streak bonuses
-- `gamification_state` table tracks per-user daily visit timestamps
-
-### 9. Quality System
-
-#### Validation
-- Range validation per indicator
-- Freshness validation per source
-- Cross-source coherence checks
-- Automated quality scoring
-
----
-
-## Data Flow
-
-### Ingestion
-```
-External Source → refresh_v2.py → SQLite (indicators)
-                              → Quality Check
-                              → Audit Log
-```
-
-### Deployment
-```
-deploy.py → POST /refresh → generate.py → npm run build
-         → xcopy to nginx/html/ → nginx reload → verify all URLs
-```
-
-### API Query
-```
-Client → cloudflared (HTTPS) → nginx (:80)
-       → backend proxy (/health, /indicators, /gamification/, /data/indicators.json, /data/latest.json)
-       → nginx static files (/data/<category>/)
-       → React SPA catch-all (/)
-```
-
-### Contribution
-```
-Submit → /gamification/contribute → SQLite (submissions)
-       → Review → Approve/Reject
-       → Update indicators (if approved)
-```
-
-### Gamification Flow
-```
-User visits site → POST /gamification/visit/{user_id} → backend
-       → Check daily visit state → Award XP → Update streak
-       → Log to gamification_history → Update leaderboard
-```
-
----
+### Category Data Files (in `data/cache/`)
+- `latest.json` — Most recent data snapshot
+- `indicators.json` — Complete indicator catalog (50 entries)
+- `census_dp03.json` — Economic census data
+- `census_dp05.json` — Demographics census data
+- `tourism.json` — Tourism statistics
+- `transportation.json` — Transportation data
+- `climate.json` — Climate data
+- `education.json` — Education data
+- `government.json` — Government finance
+- `safety.json` — Public safety
+- `health.json` — Health data
+- `redfin_volusia.json` — Real estate data
 
 ## Nginx Routing Rules (Current)
 
-The nginx.conf uses **location specificity** to route requests:
+The nginx.conf uses **location specificity** to route requests. **Important: nginx.conf does NOT include `conf.d/`** — all proxy locations are inline.
 
 1. **Exact matches** (`location = /path`) — highest priority, proxy to backend
    - `/health`, `/latest`, `/indicators` → direct proxy
    - `/data/indicators.json`, `/data/latest.json` → direct proxy
+   - `/gamification` → 301 redirect to `/gamification/`
+   - `/gamification/` → 301 redirect to `/gamification`
    - `/gamification/leaderboard` → proxy to backend `/gamification/leaderboard`
+   - `/refresh` → proxy POST to backend `/refresh`
 
-2. **Prefix match** (`location /gamification/`) — proxy all methods to backend `/gamification` (strips `/gamification/` prefix)
-   - `/gamification/missions`, `/gamification/pulse`, `/gamification/contribute`, etc. → work correctly
-   - `/gamification/` → proxy to backend `/gamification/`
-   - Handles POST `/gamification/visit/{user_id}`, etc.
+2. **Prefix match** (`location /gamification/`) — proxy all methods to backend
+   - `/gamification/missions`, `/gamification/pulse`, `/gamification/contribute`, etc. → proxy to backend `/gamification/*`
+   - Handles all GET/POST gamification endpoints
 
 3. **Static category pages** (`location ^~ /data/`) — serves static HTML
    - `/data/` → `try_files $uri $uri/ /data/index.html`
@@ -308,62 +138,141 @@ The nginx.conf uses **location specificity** to route requests:
    - All other routes → `try_files $uri $uri/ /index.html`
    - React handles client-side routing
 
-**Important**: nginx.conf does NOT include `conf.d/`. The `conf.d/default.conf` file exists but is not loaded. All proxy locations are inline.
+## Deploy Pipeline
 
----
+### Quick Start
+```bash
+# Full deploy
+python C:/Users/zqmco/Docker/volusia-portal/scripts/deploy.py
 
-## Known Issues and Fixes (2026-09-11)
+# Dry run (preview)
+python C:/Users/zqmco/Docker/volusia-portal/scripts/deploy.py --dry-run
 
-### Fixed
-- **POST /gamification/visit/{user_id} returned 405**: Added `location /gamification/` proxy block to nginx.conf
-- **pct_white_alone_acs = 100.0%**: Deleted broken record (id:46) from `volusia-portal/data/volusia.db`. `pctWhiteAlone` (id:12) = 68.6% is the correct value
-- **nginx -t fails with path error**: Use Windows-style path: `nginx.exe -t -p C:/Users/zqmco/scoop/persist/nginx`
-- **Backend reading wrong DB**: `DB_PATH` resolves to `volusia-portal/data/volusia.db` (parent of `backend/`), not `backend/data/volusia.db`. Both copies kept in sync
-- **nginx.conf mime.types**: `include C:/Users/zqmco/scoop/apps/nginx/current/conf/mime.types` works through symlink chain
+# Skip backend refresh
+python C:/Users/zqmco/Docker/volusia-portal/scripts/deploy.py --skip-backend
 
-### Active
-- **error.log is 21MB+**: Consider log rotation
-- **Stale `scoop\apps\nginx\current\nginx.conf`**: Old config on port 8089, not used by NSSM
-- **`conf.d/default.conf` dead file**: Contains proxy rules but is never included by nginx.conf
+# Skip React build
+python C:/Users/zqmco/Docker/volusia-portal/scripts/deploy.py --skip-frontend
+```
 
----
+### Refresh Backend Data
+```bash
+# Via nginx (port 80)
+curl -X POST http://127.0.0.1/refresh?_secret=debug_token
 
-## Monitoring
+# Via backend directly (port 8000)
+curl -X POST http://127.0.0.1:8000/refresh?_secret=debug_token
+```
 
-### Health Checks
-- `GET /health` — System status + indicator count + categories
-- `GET /` — Service info
-- `GET /data/indicators.json` — Full indicator list
-- `GET /gamification/leaderboard` — Leaderboard JSON
+### Gamification
+```bash
+# Record a visit
+curl -X POST "http://127.0.0.1/gamification/visit/test_user"
 
-### Audit Trail
-- `audit_log` table tracks all pipeline runs
-- `submissions` table tracks all contributions
-- Console logging for errors
+# Leaderboard
+curl http://127.0.0.1/gamification/leaderboard
 
----
+# Missions
+curl "http://127.0.0.1/gamification/missions?user_id=test_user"
 
-## Dependencies
+# Contribute
+curl -X POST "http://127.0.0.1/gamification/contribute?user_id=test_user" -H "Content-Type: application/json" -d '{"action":"test"}'
+```### Steps (automated)
+1. **Refresh backend data** — `POST http://127.0.0.1:8000/refresh`
+2. **Generate static pages** — `python generate.py`
+3. **Build React** — `npm run build` in `volusia-portal/src/`
+4. **Sync to nginx** — Copy React build + static data pages to `html/`
+5. **Restart services** — `nssm restart Volusia-Nginx`
+6. **Verify** — Check all 21 endpoints return 200 via HTTPS
 
-### Required
-- Python 3.11+, FastAPI, Uvicorn, sqlite3
-- Node.js 20+, npm
-- nginx (Windows NSSM)
-- cloudflared (Windows service)
-- SQLite 3
+### Manual Steps (if deploy.py fails)
+```bash
+# 1. Refresh backend data (via nginx tunnel)
+curl -X POST http://127.0.0.1/refresh?_secret=debug_token
 
-### Optional
-- Docker + Docker Compose (optional, for containerized deployment)
-- matplotlib, requests, pandas
+# 1b. Or directly via backend
+curl -X POST http://127.0.0.1:8000/refresh?_secret=debug_token
 
----
+# 2. Generate static pages
+python C:/Users/zqmco/project-volusia-web/generate.py
+
+# 3. Build React
+cd C:/Users/zqmco/Docker/volusia-portal/src
+npm run build
+
+# 4. Sync to nginx html
+xcopy /Y /Q "C:\Users\zqmco\Docker\volusia-portal\src\build\*" "C:\Users\zqmco\scoop\persist\nginx\html\" /I
+xcopy /Y /Q "C:\Users\zqmco\project-volusia-web\data\*" "C:\Users\zqmco\scoop\persist\nginx\html\data\" /I /E
+
+# 5. Restart nginx (full kill+start if config changed)
+taskkill /F /FI "imagename eq nginx.exe"
+nssm start Volusia-Nginx
+
+# 6. Restart backend if needed
+cd C:\Users\zqmco\Docker\volusia-portal\backend
+restart-backend.bat
+
+# 7. Verify
+curl -skL https://zqmlabs.com/ -o /dev/null -w "%{http_code}\n"
+```
+
+### Service Names
+| Service | NSSM Name | Port | Purpose |
+|---------|-----------|------|---------|
+| Nginx | `Volusia-Nginx` | 80 | Static files + reverse proxy |
+| Backend | `VolusiaWeb` | 8000 | FastAPI data API |
+| cloudflared | `cloudflared` | — | Tunnel to internet |
+
+### Database Path
+**PRIMARY DB**: `C:\Users\zqmco\Docker\volusia-portal\data\volusia.db`
+
+The backend (`backend/main.py`) resolves `DB_PATH = Path(__file__).resolve().parent.parent / "data" / "volusia.db"`. Since `main.py` is at `Docker\volusia-portal\backend\main.py`, `parent.parent` is `Docker\volusia-portal\`, so the DB is at `Docker\volusia-portal\data\volusia.db`.
+
+There is also a copy at `Docker\volusia-portal\backend\data\volusia.db` — keep both in sync.
+
+## nginx Configuration
+
+### Active Config
+- **File**: `C:\Users\zqmco\scoop\persist\nginx\conf\nginx.conf`
+- **Port**: 80 (zqmlabs.com, www.zqmlabs.com)
+- **Includes**: `mime.types` from `C:/Users/zqmco/scoop/apps/nginx/current/conf/mime.types`
+- **Does NOT include**: `conf.d/*.conf` (the `conf.d/default.conf` is a dead file)
+- **Test command**: `C:\Users\zqmco\scoop\apps\nginx\current\nginx.exe -t -p C:\Users\zqmco\scoop\persist\nginx`
+
+### Important: Windows Path Gotcha
+- `nginx -t` with `-p /c/Users/...` (forward slashes) **FAILS** on Windows
+- Use `nginx -t -p C:/Users/zqmco/scoop/persist/nginx` (Windows-style path)
+- The `current` symlink chain: `current → 1.31.4 → conf → persist/nginx/conf`
+
+### Reloading nginx on Windows
+NSSM `nssm restart Volusia-Nginx` may NOT fully kill the master process on Windows. If config changes don't take effect:
+```cmd
+taskkill /F /FI "imagename eq nginx.exe"
+nssm start Volusia-Nginx
+```
+
+## Future API Improvements
+- [ ] **GraphQL endpoint** — single query for all data sources
+- [ ] **WebSocket streaming** — real-time indicator updates
+- [ ] **Pagination** — for large indicator sets
+- [ ] **Cache headers** — `ETag` and `If-None-Match` support
+- [ ] **CORS** — allow cross-origin for API consumers
+- [ ] **Rate limiting** — per-IP limits on data endpoints
+- [ ] **Schema validation** — JSON Schema for all responses
+- [ ] **OpenAPI spec** — auto-generated docs at `/api/docs`
+
+### API Key Structure (for future)
+```
+X-API-Key: ***  # Scoped to read-only data access
+X-API-Secret: [REDACTED]  # For write/admin operations
+```
 
 ## Troubleshooting
 
 ### POST endpoints return 405
 - nginx.conf `location /gamification/` block must be present
 - Verify: `grep -n "location /gamification" conf/nginx.conf`
-- Fix: Reload nginx (or kill all nginx.exe processes and restart via NSSM)
+- Fix: Kill all nginx.exe processes + `nssm start Volusia-Nginx`
 
 ### API returns stale data
 - Backend reads from `volusia-portal/data/volusia.db` — verify correct DB
@@ -381,6 +290,26 @@ The nginx.conf uses **location specificity** to route requests:
 ### Backend restart blocked (admin rights)
 - PID runs as Session 0 Windows service
 - Use `nssm restart VolusiaWeb` or have admin run `Restart-Service VolusiaWeb`
+
+### error.log grows too large
+- Check: `type C:\Users\zqmco\scoop\persist\nginx\logs\error.log`
+- Consider log rotation
+
+### `pct_white_alone_acs` = 100.0% (FIXED 2026-09-11)
+- Root cause: Duplicate DB record `pct_white_alone_acs` (id:46) with wrong value 100.0
+- Fix: Deleted broken record from `volusia-portal/data/volusia.db`
+- Correct value: `pctWhiteAlone` (id:12) = 68.6%
+- Prevent: Data refresh scripts should deduplicate indicators by name
+
+## Future API Improvements
+- [ ] **GraphQL endpoint** — single query for all data sources
+- [ ] **WebSocket streaming** — real-time indicator updates
+- [ ] **Pagination** — for large indicator sets
+- [ ] **Cache headers** — `ETag` and `If-None-Match` support
+- [ ] **CORS** — allow cross-origin for API consumers
+- [ ] **Rate limiting** — per-IP limits on data endpoints
+- [ ] **Schema validation** — JSON Schema for all responses
+- [ ] **OpenAPI spec** — auto-generated docs at `/api/docs`
 
 ---
 
