@@ -1,113 +1,168 @@
-# Project Volusia — Backend
+# Project Volusia — Backend Data Pipeline
 
-[![CI](https://github.com/ZQM-Labs/zqm-volusia/actions/workflows/ci.yml/badge.svg)](https://github.com/ZQM-Labs/zqm-volusia/actions/workflows/ci.yml)
-[![Tests](https://github.com/ZQM-Labs/zqm-volusia/actions/workflows/tests.yml/badge.svg)](https://github.com/ZQM-Labs/zqm-volusia/actions/workflows/tests.yml)
-[![Release](https://github.com/ZQM-Labs/zqm-volusia/actions/workflows/release.yml/badge.svg)](https://github.com/ZQM-Labs/zqm-volusia/actions/workflows/release.yml)
+> FastAPI backend serving 50+ live indicators, gamification engine, and automated data refresh for the Project Volusia public data portal.
 
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Language](https://img.shields.io/badge/Language-Python%2C%20FastAPI%2C%20SQLAlchemy-blue)](https://github.com/ZQM-Labs/zqm-volusia)
+---
 
-## About
+## Overview
 
-Project Volusia is the backend data pipeline serving the Volusia County open data portal at [volusia.zqmlabs.com](https://volusia.zqmlabs.com). It aggregates 474 indicators across 10 categories from authoritative government sources including US Census Bureau, BLS, BEA, NOAA, CDC, and county open data portals.
+Project Volusia is a comprehensive open data portal for Volusia County, Florida. The **backend** provides the data layer — aggregating **50+ indicators** across **15+ categories** from authoritative sources including US Census Bureau, BLS, BEA, NOAA, C2ER, and more.
 
-**The React frontend is in [zqm-volusia-web](https://github.com/ZQM-Labs/zqm-volusia-web).**
-
-## Architecture
+### Architecture
 
 ```
-zqmlabs.com ──┐
-              ├── zqm-portal (ZQM company portal, advertising services)
-              │
-volusia.zqmlabs.com ──┤
-                      │
-              ├── zqm-volusia-web (React + Vite + TypeScript frontend)
-              │       │
-              │       └── /data/* → zqm-volusia backend
-              │
-              └── zqm-volusia (FastAPI backend, data pipeline)
-                      │
-                      ├── PostgreSQL (volusia.db — 27 indicators live)
-                      ├── Redis (caching)
-                      └── Celery (background tasks)
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│  zqm-portal      │────▶│  zqm-volusia     │────▶│  Data Sources   │
+│  (React Frontend)│     │  (FastAPI Backend)│     │  (Census, BLS)  │
+└─────────────────┘     └──────────────────┘     └─────────────────┘
+        │                       │
+        ▼                       ▼
+  zqmlabs.com           volusia.db (SQLite)
+  nginx reverse proxy   474 indicator cache
+                        gamification engine
 ```
 
-## Key Features
-
-- **474 Indicators** — Across 10 categories: economic, demographic, environmental, housing, safety, government, health, education, infrastructure, and social
-- **18+ Map Layers** — Interactive geographic data via Leaflet
-- **Real-Time Data** — Direct from government APIs
-- **Gamification** — 30 missions, 5 tiers, 14 pathways (A-N)
-- **Open Source** — MIT License, community contributions welcome
+---
 
 ## Quick Links
 
 | Resource | URL |
-|---|---|
-| **Live Portal** | [volusia.zqmlabs.com](https://volusia.zqmlabs.com) |
-| **Frontend Repo** | [ZQM-Labs/zqm-volusia-web](https://github.com/ZQM-Labs/zqm-volusia-web) |
-| **Backend API** | [https://volusia.zqmlabs.com/api](https://volusia.zqmlabs.com/api) |
-| **Data Indicators** | [https://volusia.zqmlabs.com/data/indicators.json](https://volusia.zqmlabs.com/data/indicators.json) |
-| **Connection Guide** | [CONNECTION.md](CONNECTION.md) |
-| **Deploy Pipeline** | [deploy.py](deploy.py) |
-
-## Categories
-
-Economic | Demographic | Environmental | Housing | Safety | Government | Health | Education | Infrastructure | Social
-
-## Stack
-
-| Layer | Tech |
-|-------|------|
-| Framework | FastAPI, SQLAlchemy, Celery |
-| Database | PostgreSQL, Redis |
-| Frontend | React 18 + Vite + TypeScript (zqm-volusia-web) |
-| Charts | Nivo (D3-based) |
-| Maps | Leaflet + react-leaflet |
-| Styling | Tailwind CSS |
-| Cache | Redis |
-| Queue | Celery |
-
-## Deployment
-
-### Backend Refresh
-```bash
-python3 deploy.py --skip-generate --skip-restart
-```
-
-### Full Pipeline
-```bash
-python3 deploy.py  # refresh → generate → build → sync → restart → verify
-```
-
-### Manual Restart
-```bash
-nssm restart VolusiaWeb  # Requires admin rights
-```
-
-## Development
-
-1. Clone this repo: `git clone https://github.com/ZQM-Labs/zqm-volusia.git`
-2. Copy `.env.example` to `.env` and configure
-3. Install dependencies: `pip install -r requirements.txt`
-4. Run the backend: `uvicorn main:app --host 0.0.0.0 --port 8000`
-5. Frontend runs separately in `zqm-volusia-web`
-
-## Contribution Guide
-
-We welcome contributions! Here's how to get started:
-
-1. **Fork** this repo: `gh repo fork ZQM-Labs/zqm-volusia`
-2. **Create a branch**: `git checkout -b feature/your-feature-name`
-3. **Make changes** and commit them
-4. **Open a PR** with a clear description
-5. **Wait for review** — maintainers respond within a few days
-
-## License
-
-This project is licensed under the MIT License — see [LICENSE](LICENSE) for details.
+|----------|-----|
+| **Live Portal** | https://zqmlabs.com |
+| **Backend API** | https://zqmlabs.com/api |
+| **Frontend Repo** | https://github.com/ZQM-Computing/zqm-portal |
+| **Backend Repo** | https://github.com/ZQM-Labs/zqm-volusia |
+| **API Docs** | https://zqmlabs.com/api/docs |
+| **Connection Guide** | [DEPLOY.md](DEPLOY.md) |
 
 ---
 
-**Project Volusia** — Open data for Volusia County, Florida  
-**Backend** · **[volusia.zqmlabs.com](https://volusia.zqmlabs.com)** · **[GitHub](https://github.com/ZQM-Labs/zqm-volusia)**
+## Key Features
+
+- **50+ Live Indicators** — Economic, demographics, climate, tourism, infrastructure, safety, and more
+- **Gamification Engine** — 30 missions, 5 tiers, 14 pathways (A–S)
+- **Automated Refresh** — Scheduled data pulls from government APIs
+- **FastAPI Backend** — High-performance async Python API
+- **SQLite Database** — Persistent storage with 474 indicator records
+- **Open Source** — MIT License, community contributions welcome
+
+---
+
+## Directory Structure
+
+```
+zqm-volusia/
+├── backend/
+│   ├── main.py              # FastAPI application entry point
+│   ├── gamification.py      # Gamification engine
+│   ├── gamification/
+│   │   ├── routes.py        # Gamification API routes
+│   │   └── scoring.py       # Mission scoring logic
+│   ├── requirements.txt     # Python dependencies
+│   └── Dockerfile.backend   # Backend Docker container
+├── scripts/
+│   ├── deploy.py            # Deployment pipeline
+│   ├── refresh_v2.py        # Data refresh orchestrator
+│   ├── scraper.py           # Web scraping utilities
+│   ├── kb_bridge.py         # Knowledge base bridge
+│   └── ...                  # 20+ utility scripts
+├── tests/
+│   ├── test_main.py         # Backend tests
+│   └── conftest.py          # Test fixtures
+├── data/
+│   ├── volusia.db           # SQLite database (474 indicators)
+│   └── cache/               # Cached API responses
+├── Tools/
+│   └── verify_data.py       # Data verification tool
+├── Dockerfile               # Main Dockerfile
+├── docker-compose.yml       # Docker Compose orchestration
+├── Makefile                 # Build targets
+└── requirements.txt         # Root dependencies
+```
+
+---
+
+## Development
+
+### Prerequisites
+
+- Python 3.11+
+- Docker + Docker Compose
+- Node.js 18+ (for frontend only)
+
+### Backend Setup
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Run locally
+uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+
+# Run tests
+pytest tests/
+
+# With Docker
+docker-compose up backend
+```
+
+### Data Refresh
+
+```bash
+# Refresh all data
+python scripts/refresh_v2.py
+
+# Refresh specific category
+python scripts/refresh_v2.py --category Economic
+```
+
+### Gamification
+
+```bash
+# Check mission progress
+python backend/gamification.py --status
+
+# Award mission points
+python backend/gamification.py --mission mission-name
+```
+
+---
+
+## API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/health` | GET | Health check |
+| `/latest` | GET | Latest indicator data |
+| `/data/{category}` | GET | Category data |
+| `/indicators` | GET | All indicators |
+| `/gamification/missions` | GET | Active missions |
+| `/gamification/score/{user}` | GET | User score |
+| `/refresh` | POST | Trigger data refresh |
+
+---
+
+## Deployment
+
+See [DEPLOY.md](DEPLOY.md) for the full deployment pipeline.
+
+The `deploy.py` script automates:
+1. Backend data refresh
+2. Static page generation
+3. React frontend build
+4. Nginx sync and restart
+5. Endpoint verification (21 endpoints)
+
+---
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+ZQM-Labs is focused on **family, business, automation, and safety** open-source technologies. Project Volusia is one flagship initiative.
+
+---
+
+## License
+
+MIT License — see [LICENSE](LICENSE).
