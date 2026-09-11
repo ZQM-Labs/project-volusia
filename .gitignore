@@ -1,49 +1,46 @@
-# Python
+# Logs
+backend.log
+backend/*.log
+
+# Cache
+backend/data/cache/
+
+# Scripts (optional — keep or remove)
+.probe.ps1
+add-endpoints.py
+backend/start-server.bat
+fix-volusia-web.ps1
+
+# Debug notes
+debug-finding.md
+diagnosis-data-302.md
+ux-audit-findings.md
+ux-audit-plan.md
+
+# Build output
+dist/
+node_modules/
 __pycache__/
-*.py[cod]
-*.class
-*.so
-.Python
-env/
-venv/
-.venv/
+*.pyc
+
+# Windows reserved filenames
+nullogs/
+nul
+
+# Environment
+.env
+.env.local
 
 # IDE
-.vscode/
 .idea/
+.vscode/
 *.swp
 *.swo
 
 # OS
-Thumbs.db
 .DS_Store
-desktop.ini
+Thumbs.db
 
-# Windows
-*.exe
-*.dll
-*.bat
-*.ps1
-# Exception: Project Volusia setup script
-!Tools/setup_scheduled_tasks.bat
-
-# Logs
-*.log
-
-# Project Volusia — generated & collaboration artifacts
-.env
-*.db
-*.sqlite3
-*.db-journal
-*.jsonl
-claims/
-*.lock
-Tools/_scratch/
-.ruff_cache/
-.pytest_cache/
-*.egg-info/
-
-# Test & build artifacts
-.coverage
-build/
-dist/
+# Volusia DB — tracked (contains authoritative indicator data)
+# Uncomment the next line to exclude the DB from git tracking:
+# volusia.db
