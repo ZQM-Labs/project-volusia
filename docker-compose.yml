@@ -1,53 +1,53 @@
-version: "3.8"
-
+# Project Volusia — Docker Compose
 services:
-  # Main portal API
-  portal:
-    build: .
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
-      - "8789:8789"
-    volumes:
-      - ./Tools/volusia_data:/app/Tools/volusia_data
-      - ./Data:/app/Data
-      - ./volusia.db:/app/Tools/volusia_data/volusia.db
-    environment:
-      - VOLUSIA_PORT=8789
-      - VOLUSIA_DB_PATH=/app/Tools/volusia_data/volusia.db
-    restart: unless-stopped
+      - "8080:80"
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8789/api/health')"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost/ || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
-
-  # Data refresh worker
-  refresh:
-    build: .
-    volumes:
-      - ./Tools/volusia_data:/app/Tools/volusia_data
-      - ./volusia.db:/app/Tools/volusia_data/volusia.db
-      - ./fetch_log.jsonl:/app/fetch_log.jsonl
-    environment:
-      - CENSUS_API_KEY
-      - BLS_API_KEY
-      - BEA_API_KEY
-    restart: unless-stopped
-
-  # Data explorer (optional)
-  explorer:
-    build: .
-    ports:
-      - "8791:8791"
-    command: python -c "from volusia_data.portal_app import app; import uvicorn; uvicorn.run(app, host='0.0.0.0', port=8791)"
-    volumes:
-      - ./Tools/volusia_data:/app/Tools/volusia_data
-      - ./volusia.db:/app/Tools/volusia_data/volusia.db
-    environment:
-      - VOLUSIA_PORT=8791
+      start_period: 60s
     depends_on:
-      - portal
+      - backend
+    environment:
+      - VITE_API_URL=/api
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.backend
+    # Port 8000 intentionally NOT exposed — backend is internal-only,
+    # reached through nginx (frontend container) via Docker network.
+    # Cloudflare proxies to port 8080 (frontend/nginx).
+    # Exposing 8000 to the internet causes 502 errors and security risk.
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 60s
+    volumes:
+      - ./data:/app/data
+    environment:
+      - PYTHONPATH=/app
+
+  # Optional: SearXNG for self-hosted search
+  searxng:
+    image: searxng/searxng:latest
+    ports:
+      - "8081:8080"
+    environment:
+      - INSTANCE_NAME=volusia-search
+    volumes:
+      - searxng-data:/etc/searxng
     restart: unless-stopped
+    profiles:
+      - search
 
 volumes:
-  data:
-  logs:
+  searxng-data:
