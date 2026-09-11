@@ -1,152 +1,159 @@
-# Project Volusia — Backend & Data Pipeline
+# ZQM Labs
 
-> Open-source intelligence and data-driven decision-making for Volusia County, Florida.
+[![CI](https://github.com/ZQM-Labs/zqm-volusia/actions/workflows/ci.yml/badge.svg)](https://github.com/ZQM-Labs/zqm-volusia/actions/workflows/ci.yml)
+[![Tests](https://github.com/ZQM-Labs/zqm-volusia/actions/workflows/tests.yml/badge.svg)](https://github.com/ZQM-Labs/zqm-volusia/actions/workflows/tests.yml)
+[![Ruff](https://github.com/ZQM-Labs/zqm-volusia/actions/workflows/ci.yml/badge.svg)](https://github.com/ZQM-Labs/zqm-volusia/actions/workflows/ci.yml)
 
----
+![Languages](https://github-readme-stats.vercel.app/api/top-langs/?username=ZQM-Labs&layout=compact&theme=default&hide_border=true&hide=Jupyter+Notebook)
 
-## Quick Links
+## About
 
-| Resource | URL |
-|----------|-----|
-| **Live Portal** | https://volusia.zqmlabs.com |
-| **Frontend Repo** | https://github.com/ZQM-Computing/volusia-portal |
-| **API Endpoint** | https://volusia.zqmlabs.com/api |
-| **Connection Guide** | [CONNECTION.md](CONNECTION.md) |
+**ZQM Labs — Research, Security, and Frontier Technology.**
 
----
+ZQM Labs is the research and development arm of ZQM Computing. While ZQM-Computing maintains the public-facing products and company infrastructure, ZQM Labs focuses on:
 
-## Overview
+- **Security Research** — Vulnerability analysis, penetration testing, and defensive tooling
+- **Attestation & Compliance** — Device identity, integrity verification, and regulatory compliance
+- **AI Safety & Ethics** — Ethical reasoning frameworks, alignment research, and AI governance
+- **Frontier Infrastructure** — Post-quantum cryptography, mesh networking, and distributed systems
+- **OSINT & Intelligence** — Open-source intelligence gathering and analysis
+- **Experimental Technology** — Proof-of-concept platforms, simulators, and bleeding-edge research
 
-Project Volusia is a comprehensive open data portal for Volusia County, Florida. This repository contains the backend data pipeline and API server that powers the public portal.
+## ZQM Vision
 
-### Key Features
+ZQM Computing builds sustainable open-source technologies that **connect families, grow businesses, and encourage communities to explore together**. ZQM Labs is where the research happens — the R&D engine that powers the ZQM ecosystem with cutting-edge security, AI, and infrastructure innovations.
 
-- **474 Indicators** — Demographics, economy, health, education, environment, and more
-- **112 Data Sources** — Government agencies, academic institutions, and reputable organizations
-- **39 Real-Time Sensors** — Traffic cameras, weather stations, air quality monitors, water sensors, webcams
-- **15 Categories** — Comprehensive coverage of county data
-- **Automated Pipeline** — Fetches, validates, stores in SQLite
-- **REST API** — FastAPI endpoints for live data
-- **Community Contributions** — Humans and AI agents can submit data and research
-- **Quality Validation** — Automated source verification and citation scoring
-- **Paginated API** — Efficient data retrieval with limit/offset pagination
-- **Rate Limiting** — Protection against abuse (10 req/60s per client)
-- **Correlation Analysis** — Pearson cross-indicator correlation
-- **Configurable CORS** — Secure cross-origin resource sharing
+Our work flows from Labs → Computing → Production:
+1. **Labs** researches and prototypes
+2. **Computing** hardens and packages for production
+3. **Production** serves the community via `zqmlabs.com` and subdomains
 
----
+## Subdomain Map
 
-## Data Sources
+Every subdomain of `zqmlabs.com` maps to a ZQM product:
 
-| Source | Data | Status |
-|--------|------|--------|
-| US Census PEP | Population estimates | ✅ Live |
-| US Census ACS | Economic/demographic profiles | ✅ Live |
-| BLS LAUS | Unemployment rates | ✅ Live |
-| BLS QCEW | Employment/wages | ✅ Live |
-| BEA Regional | Personal income | ✅ Live |
-| NOAA NCEI | Weather data | ✅ Live |
-| C2ER | Cost of living index | ⚠️ Cached |
-| Volusia CVB | Hotel/occupancy data | ✅ Live |
+| Subdomain | Product | Repo | Org |
+|-----------|---------|------|-----|
+| `zqmlabs.com` | ZQM Company | `zqm-company` | ZQM-Computing |
+| `volusia.zqmlabs.com` | Project Volusia | `zqm-volusia` | ZQM-Labs |
+| `api.zqmlabs.com` | API Gateway | `zqm-portal` | ZQM-Computing |
+| `docs.zqmlabs.com` | Documentation | `zqm-wiki` | ZQM-Labs |
+| `software.zqmlabs.com` | Public Tools | `zqm-tools` | ZQM-Labs |
+| `leaders.zqmlabs.com` | AI Leadership | `zqm-ai-council` | ZQM-Labs |
 
----
+## Repositories
 
-## Quick Start
+### Security & Attestation
 
-### Prerequisites
+| Repo | Description |
+|------|-------------|
+| [`zqm-attestation`](https://github.com/ZQM-Labs/zqm-attestation) | Windows attestation toolkit — device identity and integrity verification |
+| [`zqm-attestation-awesome`](https://github.com/ZQM-Labs/zqm-attestation-awesome) | Curated list of Windows attestation tools and resources |
+| [`zqm-attestation-briefs`](https://github.com/ZQM-Labs/zqm-attestation-briefs) | Compliance documentation, audit trails, and certification records |
+| [`zqm-attestation-clean`](https://github.com/ZQM-Labs/zqm-attestation-clean) | Verified attestation scripts and utilities (clean fork) |
+| [`zqm-shield`](https://github.com/ZQM-Labs/zqm-shield) | Endpoint security and compliance platform |
+| [`zqm-security-policy`](https://github.com/ZQM-Labs/zqm-security-policy) | Enterprise security policies and governance standards |
+| [`zqm-bounty`](https://github.com/ZQM-Labs/zqm-bounty) | Bug-bounty tooling and vulnerability management |
+| [`zqm-bounty-hub`](https://github.com/ZQM-Labs/zqm-bounty-hub) | Security research submission and vulnerability disclosure hub |
+| [`zqm-sword`](https://github.com/ZQM-Labs/zqm-sword) | Security research and penetration testing toolkit |
+| [`zqm-supply-chain`](https://github.com/ZQM-Labs/zqm-supply-chain) | Supply chain vulnerability analysis and dependency auditing |
+| [`zqm-mesh-forensics`](https://github.com/ZQM-Labs/zqm-mesh-forensics) | Mesh forensics and incident response tooling |
 
-- Python 3.11+
-- SQLite 3
+### AI, Ethics & Governance
 
-### Installation
+| Repo | Description |
+|------|-------------|
+| [`zqm-ai-council`](https://github.com/ZQM-Labs/zqm-ai-council) | AI governance and advisory board |
+| [`zqm-herc`](https://github.com/ZQM-Computing/zqm-herc) | Ethical reasoning and constraint satisfaction for AI |
+| [`zqm-grail-stack`](https://github.com/ZQM-Computing/zqm-grail-stack) | Unified AI stack — Holy-Grail-API, semantic-sieve, research pipelines |
 
-```bash
-# Clone the repository
-git clone https://github.com/ZQM-Labs/project-volusia.git
-cd project-volusia
+### Infrastructure & Mesh
 
-# Install dependencies
-pip install fastapi uvicorn matplotlib requests
+| Repo | Description |
+|------|-------------|
+| [`zqm-nest`](https://github.com/ZQM-Labs/zqm-nest) | Deployment automation and infrastructure orchestration |
+| [`zqm-workstage`](https://github.com/ZQM-Labs/zqm-workstage) | Operational workstage — task management and workflow automation |
+| [`zqm-logs`](https://github.com/ZQM-Labs/zqm-logs) | Internal logs: Windows service logs and operational telemetry |
+| [`zqm-daly`](https://github.com/ZQM-Labs/zqm-daly) | Operational automation and infrastructure management |
+| [`zqm-local-tools`](https://github.com/ZQM-Labs/zqm-local-tools) | MCP server — local system intelligence and tool integration |
+| [`zqm-eye-in-the-sky`](https://github.com/ZQM-Computing/zqm-eye-in-the-sky) | Satellite mesh simulator for the ZQM-MESH |
+| [`zqm-eye-in-the-sky-omarchy`](https://github.com/ZQM-Computing/zqm-eye-in-the-sky-omarchy) | Omarchy fork of the satellite mesh simulator |
 
-# Run the portal
-cd Tools/volusia_data
-python portal_app.py
+### Research & Intelligence
+
+| Repo | Description |
+|------|-------------|
+| [`zqm-intel`](https://github.com/ZQM-Labs/zqm-intel) | OSINT intelligence platforms — aggregate and analyze open-source data |
+| [`zqm-nsgi-pipeline`](https://github.com/ZQM-Labs/zqm-nsgi-pipeline) | Federal opportunity discovery and analysis pipeline |
+| [`zqm-localhost-findings`](https://github.com/ZQM-Labs/zqm-localhost-findings) | Security research notes and local infrastructure observations |
+
+### AI Development & Automation
+
+| Repo | Description |
+|------|-------------|
+| [`zqm-comfy-custom`](https://github.com/ZQM-Labs/zqm-comfy-custom) | ComfyUI custom nodes and AI image generation workflows |
+| [`zqm-comfyui-setup`](https://github.com/ZQM-Labs/zqm-comfyui-setup) | Automated ComfyUI deployment and configuration |
+| [`zqm-gemini-desktop`](https://github.com/ZQM-Labs/zqm-gemini-desktop) | AI-powered desktop assistant and workflow automation |
+| [`zqm-quick-bot-ledger`](https://github.com/ZQM-Labs/zqm-quick-bot-ledger) | Automated financial tracking and transaction logging |
+
+### Data & Content
+
+| Repo | Description |
+|------|-------------|
+| [`zqm-volusia`](https://github.com/ZQM-Labs/zqm-volusia) | Project Volusia backend — FastAPI, data pipeline, 474 indicators |
+| [`zqm-wiki`](https://github.com/ZQM-Labs/zqm-wiki) | Knowledge base — documentation, runbooks, institutional memory |
+| [`zqm-tools`](https://github.com/ZQM-Labs/zqm-tools) | Public tools: DFIR scripts, security utilities, reconnaissance |
+| [`zqm-whisper`](https://github.com/ZQM-Labs/zqm-whitefeather) | PowerShell automation framework for Windows infrastructure |
+
+### Developer Experience
+
+| Repo | Description |
+|------|-------------|
+| [`zqm-dev-setup`](https://github.com/ZQM-Labs/zqm-dev-setup) | Docker, tools, and infrastructure provisioning |
+| [`zqm-github-templates`](https://github.com/ZQM-Labs/zqm-github-templates) | Organization templates — issue templates, CI workflows, community standards |
+
+## Contribution Guide
+
+We welcome contributions from humans and AI agents alike. ZQM Labs is where innovation happens — whether you're building a security tool, writing an AI ethics paper, or automating infrastructure.
+
+### How to Contribute
+
+1. **Fork** the relevant repository
+2. **Create a branch** with a descriptive name: `feat/amazing-feature` or `fix/bug-name`
+3. **Follow the conventions**: conventional commits (`feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`)
+4. **Write tests** for new features
+5. **Run linting**: `make lint` and `make format`
+6. **Open a PR** with a clear description
+
+### Areas We're Looking For Help
+
+- **Security**: Vulnerability research, penetration testing, attestation improvements
+- **AI Ethics**: Governance frameworks, alignment research, ethical reasoning tools
+- **Infrastructure**: Mesh networking, deployment automation, monitoring
+- **Documentation**: Runbooks, tutorials, API docs, knowledge base articles
+- **DevOps**: CI/CD improvements, Docker packaging, testing frameworks
+- **Research**: OSINT tooling, federal procurement analysis, data science
+
+### Community Standards
+
+- All code is MIT-licensed
+- Follow the [Contributor Covenant](https://www.contributor-covenant.org/) code of conduct
+- Be respectful and constructive in all interactions
+- Document your work — if it's useful, write it down
+- AI-assisted contributions are welcome and encouraged
+
+## The ZQM Ecosystem
+
 ```
-
-### Access
-
-- **Portal**: http://localhost:8789
-- **API**: http://localhost:8790
-
----
-
-## Data Refresh
-
-```bash
-cd Tools/volusia_data
-python refresh_v2.py
+ZQM Labs (research)
+    │
+    ▼
+ZQM Computing (production)
+    │
+    ▼
+zqmlabs.com / volusia.zqmlabs.com / *.zqmlabs.com (serving)
 ```
-
----
-
-## API Endpoints
-
-### Portal API (port 8789)
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/health` | GET | Health check with indicator count |
-| `/api/status` | GET | System status with SLA tracking |
-| `/api/indicators` | GET | Paginated indicators (limit/offset) |
-| `/api/citations` | GET | Citation quality scores |
-| `/api/search` | GET | Full-text search |
-| `/api/compare` | GET | Compare two indicators |
-| `/api/trend` | GET | Trend data by vintage |
-| `/api/correlation` | GET | Pearson correlation analysis |
-| `/api/export/full` | GET | Full data export (JSON/CSV) |
-| `/api/export/csv` | GET | CSV export |
-| `/api/export/json` | GET | JSON export |
-| `/api/datasets` | GET | Dataset history |
-| `/api/executive-summary` | GET | Key metrics snapshot |
-| `/api/coherence` | GET | Cross-source coherence groups |
-| `/api/chart/*.png` | GET | Chart images (cached 1hr) |
-
-**Pagination:** `/api/indicators?limit=50&offset=0` — Returns `count`, `total`, `has_more`, `limit`, `offset`.
-
-**Full endpoint reference:** [docs/api/endpoints.md](docs/api/endpoints.md)
-
-### Contribution API (port 8790)
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/v1/health` | GET | Health check with DB status |
-| `/api/v1/contributions` | POST | Submit contribution (rate limited) |
-| `/api/v1/contributions` | GET | List contributions (paginated) |
-| `/api/v1/contributions/{id}` | GET | Get contribution status |
-| `/api/v1/contributions/{id}` | PATCH | Update contribution status |
-
-**Rate Limiting:** 10 requests per 60 seconds per client. Configurable via `VOLUSIA_RATE_LIMIT` and `VOLUSIA_RATE_WINDOW` env vars. Returns `429` with `Retry-After` header when exceeded.
-
----
-
-## Frontend Portal
-
-The public-facing frontend is maintained in a separate repository:
-
-**Repository**: https://github.com/ZQM-Computing/volusia-portal
-
-**Tech Stack**: React 18 + Vite + TypeScript + Tailwind CSS + Nivo charts + Leaflet maps
-
-**Deployment**: GitHub Pages → https://volusia.zqmlabs.com
-
----
-
-## Connection to Frontend
-
-See [CONNECTION.md](CONNECTION.md) for detailed documentation on how this backend connects to the ZQM-Computing frontend.
-
----
 
 ## License
 
-MIT © 2026 ZQM Labs / ZQM Computing
+[MIT](LICENSE) © 2026 ZQM Labs
