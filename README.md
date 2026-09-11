@@ -12,7 +12,7 @@ Project Volusia is a comprehensive open data portal for Volusia County, Florida.
 
 ```
 ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│  zqm-portal      │────▶│  volusia-zqmlabs     │────▶│  Data Sources   │
+│  zqmlabs-website      │────▶│  volusia-zqmlabs     │────▶│  Data Sources   │
 │  (React Frontend)│     │  (FastAPI Backend)│     │  (Census, BLS)  │
 └─────────────────┘     └──────────────────┘     └─────────────────┘
         │                       │
@@ -30,7 +30,7 @@ Project Volusia is a comprehensive open data portal for Volusia County, Florida.
 |----------|-----|
 | **Live Portal** | https://zqmlabs.com |
 | **Backend API** | https://zqmlabs.com/api |
-| **Frontend Repo** | https://github.com/ZQM-Computing/zqm-portal |
+| **Frontend Repo** | https://github.com/ZQM-Computing/zqmlabs-website |
 | **Backend Repo** | https://github.com/ZQM-Labs/volusia-zqmlabs |
 | **API Docs** | https://zqmlabs.com/api/docs |
 | **Connection Guide** | [DEPLOY.md](DEPLOY.md) |
