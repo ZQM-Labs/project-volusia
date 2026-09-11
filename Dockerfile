@@ -1,34 +1,21 @@
-# Project Volusia Docker Image
-# Build: docker build -t project-volusia .
-# Run: docker-compose up -d
+# syntax=docker/dockerfile:1
+# Project Volusia — Public Data Portal
+# Multi-stage build: compile React app, serve via nginx
 
-FROM python:3.11-slim
-
-LABEL maintainer="zqmcomputing@gmail.com"
-LABEL version="2.1.0"
-LABEL description="Volusia County Open Data Portal"
-
-# Security: non-root user
-RUN useradd -m -u 1000 volusia
-
+FROM node:20-alpine AS build
 WORKDIR /app
 
-# Install dependencies
-COPY pyproject.toml .
-RUN pip install --no-cache-dir -e ".[dev]"
+COPY package.json package-lock.json* ./
+RUN npm install --silent
 
-# Copy source
-COPY Tools/volusia_data/ Tools/volusia_data/
-COPY scripts/ scripts/
+COPY . .
+RUN npm run build
 
-# Create data directories
-RUN mkdir -p /app/Data /app/Media && \
-    chown -R volusia:volusia /app
+FROM nginx:alpine AS serve
+COPY nginx/nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/dist /usr/share/nginx/html
+COPY --from=build /app/public /usr/share/nginx/html/public
+COPY --from=build /app/data /usr/share/nginx/html/data
 
-USER volusia
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8789/api/health')" || exit 1
-
-CMD ["python", "Tools/volusia_data/portal_app.py"]
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
