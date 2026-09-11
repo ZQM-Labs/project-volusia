@@ -4,6 +4,20 @@
 
 ---
 
+## 🌐 Domains Served
+
+| Domain | Repo | Branch | Purpose |
+|--------|------|--------|---------|
+| **volusia.zqmlabs.com** | `ZQM-Labs/volusia-zqmlabs` | `main` | Public data portal |
+| **api.zqmlabs.com** | `ZQM-Labs/volusia-zqmlabs` | `main` | Backend API endpoint |
+| **zqmlabs.com** | `ZQM-Computing/zqmlabs-website` | `master` | Frontend (separate repo) |
+
+**Domain-to-repo naming rule**: `volusia-zqmlabs` serves `volusia.zqmlabs.com`.
+The frontend `zqmlabs-website` serves `zqmlabs.com`. Both repos communicate
+via the shared backend API on port 8000.
+
+---
+
 ## Overview
 
 Project Volusia is a comprehensive open data portal for Volusia County, Florida. The **backend** provides the data layer — aggregating **50+ indicators** across **15+ categories** from authoritative sources including US Census Bureau, BLS, BEA, NOAA, C2ER, and more.
@@ -12,28 +26,55 @@ Project Volusia is a comprehensive open data portal for Volusia County, Florida.
 
 ```
 ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│  zqmlabs-website      │────▶│  volusia-zqmlabs     │────▶│  Data Sources   │
-│  (React Frontend)│     │  (FastAPI Backend)│     │  (Census, BLS)  │
-└─────────────────┘     └──────────────────┘     └─────────────────┘
-        │                       │
-        ▼                       ▼
-  zqmlabs.com           volusia.db (SQLite)
-  nginx reverse proxy   474 indicator cache
-                        gamification engine
+│  zqmlabs.com       │────▶│  zqmlabs-website     │────▶│  volusia-zqmlabs    │
+│  (React Frontend)│     │  (React + FastAPI) │     │  (FastAPI Backend) │
+│  Repo:           │     │  Repo:             │     │  Repo:             │
+│  ZQM-Computing/  │     │  ZQM-Computing/    │     │  ZQM-Labs/         │
+│  zqmlabs-website │     │  zqmlabs-website   │     │  volusia-zqmlabs   │
+│  branch: master  │     │  branch: master    │     │  branch: main      │
+└─────────────────┘     └──────────────────┘     └──────────────────┘
+        │                       │                       │
+        ▼                       ▼                       ▼
+  nginx :80              nginx :80                 volusia.db
+  Cloudflare              React SPA              474 records
+                          + FastAPI              gamification engine
+                          + /data/*              50+ indicators
+                          + /missions
 ```
+
+### Data Flow
+
+```
+Government APIs ──▶ volusia-zqmlabs ──▶ zqmlabs-website ──▶ User
+  (Census, BLS,      (FastAPI :8000)     (React SPA)         (Browser)
+   NOAA, C2ER)          │                   │
+                         │                   │
+                         ▼                   ▼
+                    volusia.db            nginx :80
+                    (SQLite)              Cloudflare
+                    474 records           zqmlabs.com
+```
+
+### Repo Domains at a Glance
+
+| Repo Name | Serves | Branch | Domain |
+|-----------|--------|--------|--------|
+| `zqmlabs-website` | zqmlabs.com | `master` | Frontend + reverse proxy |
+| `volusia-zqmlabs` | volusia.zqmlabs.com | `main` | Backend data pipeline |
 
 ---
 
 ## Quick Links
 
-| Resource | URL |
-|----------|-----|
-| **Live Portal** | https://zqmlabs.com |
-| **Backend API** | https://zqmlabs.com/api |
-| **Frontend Repo** | https://github.com/ZQM-Computing/zqmlabs-website |
-| **Backend Repo** | https://github.com/ZQM-Labs/volusia-zqmlabs |
-| **API Docs** | https://zqmlabs.com/api/docs |
-| **Connection Guide** | [DEPLOY.md](DEPLOY.md) |
+| Resource | URL | Repo |
+|----------|-----|------|
+| **Live Portal** | https://zqmlabs.com | `ZQM-Computing/zqmlabs-website` |
+| **Backend API** | https://api.zqmlabs.com | `ZQM-Labs/volusia-zqmlabs` |
+| **Frontend Repo** | https://github.com/ZQM-Computing/zqmlabs-website | `zqmlabs-website` |
+| **Backend Repo** | https://github.com/ZQM-Labs/volusia-zqmlabs | `volusia-zqmlabs` |
+| **Live Data** | https://zqmlabs.com/data | `ZQM-Computing/zqmlabs-website` |
+| **API Docs** | https://zqmlabs.com/api/docs | `ZQM-Labs/volusia-zqmlabs` |
+| **Connection Guide** | [DEPLOY.md](DEPLOY.md) | — |
 
 ---
 
@@ -55,114 +96,48 @@ volusia-zqmlabs/
 ├── backend/
 │   ├── main.py              # FastAPI application entry point
 │   ├── gamification.py      # Gamification engine
-│   ├── gamification/
-│   │   ├── routes.py        # Gamification API routes
+│   ├── gamification/        # Gamification module
+│   │   ├── routes.py        # API routes
 │   │   └── scoring.py       # Mission scoring logic
-│   ├── requirements.txt     # Python dependencies
-│   └── Dockerfile.backend   # Backend Docker container
-├── scripts/
-│   ├── deploy.py            # Deployment pipeline
-│   ├── refresh_v2.py        # Data refresh orchestrator
-│   ├── scraper.py           # Web scraping utilities
-│   ├── kb_bridge.py         # Knowledge base bridge
-│   └── ...                  # 20+ utility scripts
-├── tests/
-│   ├── test_main.py         # Backend tests
-│   └── conftest.py          # Test fixtures
-├── data/
-│   ├── volusia.db           # SQLite database (474 indicators)
-│   └── cache/               # Cached API responses
-├── Tools/
-│   └── verify_data.py       # Data verification tool
-├── Dockerfile               # Main Dockerfile
-├── docker-compose.yml       # Docker Compose orchestration
-├── Makefile                 # Build targets
-└── requirements.txt         # Root dependencies
+│   ├── data/                # Data processing
+│   ├── routers/             # API routers
+│   ├── services/            # Business logic
+│   ├── models/              # Database models
+│   ├── utils/               # Utility functions
+│   └── auth/                # Authentication
+├── data/                    # Static data files
+├── scripts/                 # Deployment and utility scripts
+├── docs/                    # Documentation
+├── volusia.db               # SQLite database (474 records)
+├── pyproject.toml           # Python project config
+├── Dockerfile               # Backend Docker container
+├── deploy.py                # Deployment pipeline
+└── README.md                # This file
 ```
 
 ---
 
 ## Development
 
-### Prerequisites
-
-- Python 3.11+
-- Docker + Docker Compose
-- Node.js 18+ (for frontend only)
-
 ### Backend Setup
-
 ```bash
-# Install dependencies
 pip install -r requirements.txt
-
-# Run locally
-uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
-
-# Run tests
-pytest tests/
-
-# With Docker
-docker-compose up backend
+uvicorn backend.main:app --host 0.0.0.0 --port 8000
 ```
 
-### Data Refresh
-
+### Refresh Data
 ```bash
-# Refresh all data
-python scripts/refresh_v2.py
-
-# Refresh specific category
-python scripts/refresh_v2.py --category Economic
+POST http://127.0.0.1:8000/refresh?_secret=<token>
 ```
 
-### Gamification
-
+### Deploy
 ```bash
-# Check mission progress
-python backend/gamification.py --status
-
-# Award mission points
-python backend/gamification.py --mission mission-name
+python scripts/deploy.py
 ```
-
----
-
-## API Endpoints
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/health` | GET | Health check |
-| `/latest` | GET | Latest indicator data |
-| `/data/{category}` | GET | Category data |
-| `/indicators` | GET | All indicators |
-| `/gamification/missions` | GET | Active missions |
-| `/gamification/score/{user}` | GET | User score |
-| `/refresh` | POST | Trigger data refresh |
-
----
-
-## Deployment
-
-See [DEPLOY.md](DEPLOY.md) for the full deployment pipeline.
-
-The `deploy.py` script automates:
-1. Backend data refresh
-2. Static page generation
-3. React frontend build
-4. Nginx sync and restart
-5. Endpoint verification (21 endpoints)
-
----
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
-ZQM-Labs is focused on **family, business, automation, and safety** open-source technologies. Project Volusia is one flagship initiative.
 
 ---
 
 ## License
 
-MIT License — see [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE)
+
