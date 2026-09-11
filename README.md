@@ -1,80 +1,107 @@
-# Project Volusia
+# Project Volusia — Backend
 
 [![CI](https://github.com/ZQM-Labs/zqm-volusia/actions/workflows/ci.yml/badge.svg)](https://github.com/ZQM-Labs/zqm-volusia/actions/workflows/ci.yml)
 [![Tests](https://github.com/ZQM-Labs/zqm-volusia/actions/workflows/tests.yml/badge.svg)](https://github.com/ZQM-Labs/zqm-volusia/actions/workflows/tests.yml)
 [![Release](https://github.com/ZQM-Labs/zqm-volusia/actions/workflows/release.yml/badge.svg)](https://github.com/ZQM-Labs/zqm-volusia/actions/workflows/release.yml)
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Language](https://img.shields.io/badge/Language-Python%2C%20React%2C%20TypeScript-blue)](https://github.com/ZQM-Labs/zqm-volusia)
+[![Language](https://img.shields.io/badge/Language-Python%2C%20FastAPI%2C%20SQLAlchemy-blue)](https://github.com/ZQM-Labs/zqm-volusia)
 
 ## About
 
-Project Volusia is the open-source backbone of [volusia.zqmlabs.com](https://volusia.zqmlabs.com) — a data portal for Volusia County, Florida providing real-time access to economic indicators, tourism data, environmental metrics, housing statistics, public safety information, and government services.
+Project Volusia is the backend data pipeline serving the Volusia County open data portal at [volusia.zqmlabs.com](https://volusia.zqmlabs.com). It aggregates 474 indicators across 10 categories from authoritative government sources including US Census Bureau, BLS, BEA, NOAA, CDC, and county open data portals.
 
-Built by ZQM Labs as part of the ZQM-MESH network connecting communities, families, and businesses through open-source technology.
+**The React frontend is in [zqm-volusia-web](https://github.com/ZQM-Labs/zqm-volusia-web).**
 
-## Overview
+## Architecture
 
-Project Volusia provides:
-
-- **FastAPI Backend** — REST API serving 474+ indicators across 10 categories
-- **React Frontend** — Gamified data exploration interface
-- **Static Generation** — Pre-built category pages for SEO and performance
-- **Live Data Pipeline** — Automated data refresh from public sources
-
-## Repositories
-
-| Repo | Description | Language |
-|---|---|---|
-| [zqm-volusia](https://github.com/ZQM-Labs/zqm-volusia) | Project Volusia backend — FastAPI, data pipeline, 474 indicators | Python |
-| [zqm-portal-web](https://github.com/ZQM-Computing/zqm-portal-web) | Static site generator for the Volusia portal | Python |
-| [zqm-portal](https://github.com/ZQM-Computing/zqm-portal) | Portal site generator — static HTML for zqmlabs.com + volusia.zqmlabs.com | Python |
-| [zqm-tools](https://github.com/ZQM-Labs/zqm-tools) | Public utilities: scripts, tools, helpers | Python |
-| [zqm-nest](https://github.com/ZQM-Labs/zqm-nest) | Nest infrastructure and node management | Python |
-
-## Data Categories
-
-The portal covers 10 data categories:
-
-1. **Economic** — Personal income, employment, GDP, cost of living
-2. **Tourism** — Visitor spending, hotel occupancy, attractions
-3. **Environment** — Air/water quality, climate data, conservation
-4. **Housing** — Median home value, rent trends, vacancy rates
-5. **Safety** — Crime statistics, emergency response, fire incidents
-6. **Government** — Spending, budgets, permits, elections
-7. **Demographics** — Population, migration, education levels
-8. **Health** — Healthcare access, insurance, wellness
-9. **Education** — Schools, test scores, graduation rates
-10. **Gamification** — Interactive missions, leaderboards, achievements
-
-## Quick Start
-
-```bash
-# Clone the project
-git clone https://github.com/ZQM-Labs/zqm-volusia.git
-cd zqm-volusia
-
-# Install dependencies and run the backend
-cd backend && pip install -r requirements.txt && python main.py
-
-# In another terminal, build and serve the frontend
-cd ../zqm-portal-web && npm install && npm run build
 ```
+zqmlabs.com ──┐
+              ├── zqm-portal (ZQM company portal, advertising services)
+              │
+volusia.zqmlabs.com ──┤
+                      │
+              ├── zqm-volusia-web (React + Vite + TypeScript frontend)
+              │       │
+              │       └── /data/* → zqm-volusia backend
+              │
+              └── zqm-volusia (FastAPI backend, data pipeline)
+                      │
+                      ├── PostgreSQL (volusia.db — 27 indicators live)
+                      ├── Redis (caching)
+                      └── Celery (background tasks)
+```
+
+## Key Features
+
+- **474 Indicators** — Across 10 categories: economic, demographic, environmental, housing, safety, government, health, education, infrastructure, and social
+- **18+ Map Layers** — Interactive geographic data via Leaflet
+- **Real-Time Data** — Direct from government APIs
+- **Gamification** — 30 missions, 5 tiers, 14 pathways (A-N)
+- **Open Source** — MIT License, community contributions welcome
+
+## Quick Links
+
+| Resource | URL |
+|---|---|
+| **Live Portal** | [volusia.zqmlabs.com](https://volusia.zqmlabs.com) |
+| **Frontend Repo** | [ZQM-Labs/zqm-volusia-web](https://github.com/ZQM-Labs/zqm-volusia-web) |
+| **Backend API** | [https://volusia.zqmlabs.com/api](https://volusia.zqmlabs.com/api) |
+| **Data Indicators** | [https://volusia.zqmlabs.com/data/indicators.json](https://volusia.zqmlabs.com/data/indicators.json) |
+| **Connection Guide** | [CONNECTION.md](CONNECTION.md) |
+| **Deploy Pipeline** | [deploy.py](deploy.py) |
+
+## Categories
+
+Economic | Demographic | Environmental | Housing | Safety | Government | Health | Education | Infrastructure | Social
+
+## Stack
+
+| Layer | Tech |
+|-------|------|
+| Framework | FastAPI, SQLAlchemy, Celery |
+| Database | PostgreSQL, Redis |
+| Frontend | React 18 + Vite + TypeScript (zqm-volusia-web) |
+| Charts | Nivo (D3-based) |
+| Maps | Leaflet + react-leaflet |
+| Styling | Tailwind CSS |
+| Cache | Redis |
+| Queue | Celery |
 
 ## Deployment
 
-The full portal deploys via ZQM's automated pipeline:
+### Backend Refresh
+```bash
+python3 deploy.py --skip-generate --skip-restart
+```
 
-1. Backend refresh — `POST http://127.0.0.1:8000/refresh`
-2. Static generation — `zqm-portal-web/generate.py`
-3. React build — `npm run build` in `volusia-portal/src/`
-4. Sync to nginx and restart
+### Full Pipeline
+```bash
+python3 deploy.py  # refresh → generate → build → sync → restart → verify
+```
 
-See [zqm-portal](https://github.com/ZQM-Computing/zqm-portal) for the full deploy script.
+### Manual Restart
+```bash
+nssm restart VolusiaWeb  # Requires admin rights
+```
 
-## Subdomain
+## Development
 
-Project Volusia is served at **[volusia.zqmlabs.com](https://volusia.zqmlabs.com)**.
+1. Clone this repo: `git clone https://github.com/ZQM-Labs/zqm-volusia.git`
+2. Copy `.env.example` to `.env` and configure
+3. Install dependencies: `pip install -r requirements.txt`
+4. Run the backend: `uvicorn main:app --host 0.0.0.0 --port 8000`
+5. Frontend runs separately in `zqm-volusia-web`
+
+## Contribution Guide
+
+We welcome contributions! Here's how to get started:
+
+1. **Fork** this repo: `gh repo fork ZQM-Labs/zqm-volusia`
+2. **Create a branch**: `git checkout -b feature/your-feature-name`
+3. **Make changes** and commit them
+4. **Open a PR** with a clear description
+5. **Wait for review** — maintainers respond within a few days
 
 ## License
 
@@ -82,6 +109,5 @@ This project is licensed under the MIT License — see [LICENSE](LICENSE) for de
 
 ---
 
-**ZQM Labs** — Research, Security, and Infrastructure  
-**ZQM-MESH** — Connecting communities through open-source technology  
-[volusia.zqmlabs.com](https://volusia.zqmlabs.com) · [zqmlabs.com](https://zqmlabs.com) · [api.zqmlabs.com](https://api.zqmlabs.com)
+**Project Volusia** — Open data for Volusia County, Florida  
+**Backend** · **[volusia.zqmlabs.com](https://volusia.zqmlabs.com)** · **[GitHub](https://github.com/ZQM-Labs/zqm-volusia)**
